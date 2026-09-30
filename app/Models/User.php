@@ -55,4 +55,25 @@ class User extends Authenticatable
     {
         return $this->hasOne(Barber::class);
     }
+
+public function UpdateName(string $newName): void
+    {
+        $this->name = $newName;
+        $this->save();
+    }
+
+    public function UpdateEmail(string $newEmail): void
+    {
+        $this->email = $newEmail;
+        $this->save();
+    }
+
+    public function UpdatePhone (string $phoneNumber): void 
+    {
+        $this->phone = $phoneNumber;
+        $this->save();
+    }
+// pendente : falta criar o role
+   // public function updateRole (  $role): void//
+
 }
