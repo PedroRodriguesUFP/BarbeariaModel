@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -44,18 +45,14 @@ class User extends Authenticatable
     {
         return $this->role === 'client';
     }
+
     public function client(): HasOne
     {
-    return $this->hasOne(Client::class);
-    }
-    
-    public function client(): HasOne
-    {
-    return $this->hasOne(Client::class);
+        return $this->hasOne(Client::class);
     }
 
     public function barber(): HasOne
     {
-    return $this->hasOne(Barber::class);
+        return $this->hasOne(Barber::class);
     }
 }
