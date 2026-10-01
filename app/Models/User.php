@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Enums\UserRole;
 
 class User extends Authenticatable
 {
@@ -28,22 +29,23 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => UserRole::class,
         ];
     }
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === UserRole::Admin;
     }
 
     public function isBarber(): bool
     {
-        return $this->role === 'barber';
+        return $this->role === UserRole::Barber;
     }
 
     public function isClient(): bool
     {
-        return $this->role === 'client';
+        return $this->role === UserRole::Client;
     }
 
     public function client(): HasOne
@@ -54,6 +56,18 @@ class User extends Authenticatable
     public function barber(): HasOne
     {
         return $this->hasOne(Barber::class);
+    }
+    public function hasRole(UserRole $role):bool
+    {
+       return $this->role === $role;
+    }
+    public function isActive():bool
+    {
+        return $this->active;
+    }
+    public function getDisplayNameAttribute():string
+    {
+        return $this->name;
     }
 
 public function UpdateName(string $newName): void
