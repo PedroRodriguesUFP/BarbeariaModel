@@ -100,4 +100,69 @@ class Appointment extends Model
 
         $this->save();
     }
+
+
+public function VerificarEstadoPendente (): bool 
+    {
+        if ($this->status === Status::Pendente) {
+            return true;
+        }
+        return false;
+    }
+
+public function VerificarEstadoConfirmado (): bool 
+    {
+        if ($this->status === Status::Confirmado) {
+            return true;
+        }
+        return false;
+    }
+
+    public function verificarEstadoCancelado(): bool
+    {
+        if ($this->status === Status::Cancelado) {
+            return true;
+        }
+        return false;
+    }
+    public function VerificarEstadoConcluido(): bool
+    {
+        if ($this->status === Status::Concluido) {
+            return true;
+        }
+        return false;
+    }
+
+    public function PodeSerCancelado(): bool
+    {
+        if ($this->status == Status::Pendente || $this->status === Status::Confirmado) {
+            return true;
+        }
+        return false;
+    }
+    // pendente 
+    // public function PodeSerReagendad
+
+public function confirmarMarcacao(): void
+    {
+        $this->status = Status::Confirmado;
+        $this->save();
+    }
+
+public function concluirMarcacao(): void
+    {
+        $this->status = Status::Concluido;
+        $this->save();
+    }
+
+    public function cancelarMarcacao(): void
+    {
+   if ($this->PodeSerCancelado()==true) {
+        $this->status = Status::Cancelado;
+        $this->save();
+    } else {
+        throw new \Exception('A marcação não pode ser cancelada.');
+    }
+
+}
 }
