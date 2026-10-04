@@ -82,6 +82,7 @@ class Payment extends Model
 
         $this->save();
     }
+    
     public function getFormattedAmount(): string
     {
         return number_format(

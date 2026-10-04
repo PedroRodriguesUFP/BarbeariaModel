@@ -28,7 +28,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password' => 'hashed', // Garante que a password seja sempre armazenada de forma segura (hash)
             'role' => UserRole::class,
         ];
     }
