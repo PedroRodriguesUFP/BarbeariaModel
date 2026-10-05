@@ -2,11 +2,11 @@
 
 namespace App\Enums;
 
-enum Category : string
+enum Category: string
 {
-   case cabelo = 'cabelo';
-    case barba = 'barba';
-    case cabelo_barba = 'cabelo e barba';
-    case degrada = 'degrada';
-    case coloracao = 'coloração';
+    case Hair = 'hair';
+    case Beard = 'beard';
+    case HairAndBeard = 'hair and beard';
+    case Fade = 'fade';
+    case Coloring = 'coloring';
 }

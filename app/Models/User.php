@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Enums\UserRole;
 
 class User extends Authenticatable
 {
@@ -28,7 +28,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password' => 'hashed', // Always store passwords securely as hashes.
             'role' => UserRole::class,
         ];
     }
@@ -57,37 +57,39 @@ class User extends Authenticatable
     {
         return $this->hasOne(Barber::class);
     }
-    public function hasRole(UserRole $role):bool
+
+    public function hasRole(UserRole $role): bool
     {
-       return $this->role === $role;
+        return $this->role === $role;
     }
-    public function isActive():bool
+
+    public function isActive(): bool
     {
         return $this->active;
     }
-    public function getDisplayNameAttribute():string
+
+    public function getDisplayNameAttribute(): string
     {
         return $this->name;
     }
 
-public function UpdateName(string $newName): void
+    public function updateName(string $newName): void
     {
         $this->name = $newName;
         $this->save();
     }
 
-    public function UpdateEmail(string $newEmail): void
+    public function updateEmail(string $newEmail): void
     {
         $this->email = $newEmail;
         $this->save();
     }
 
-    public function UpdatePhone (string $phoneNumber): void 
+    public function updatePhone(string $phoneNumber): void
     {
         $this->phone = $phoneNumber;
         $this->save();
     }
-// pendente : falta criar o role
-   // public function updateRole (  $role): void//
+    // TODO: Add role update support.
 
 }

@@ -25,34 +25,42 @@ class Payment extends Model
             'paid_at' => 'datetime',
         ];
     }
+
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
     }
+
     public function barber(): BelongsTo
     {
         return $this->belongsTo(Barber::class);
     }
+
     public function appointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class);
     }
+
     public function isPending(): bool
     {
         return $this->status === 'pending';
     }
+
     public function isPaid(): bool
     {
         return $this->status === 'paid';
     }
+
     public function isFailed(): bool
     {
         return $this->status === 'failed';
     }
+
     public function isRefunded(): bool
     {
         return $this->status === 'refunded';
     }
+
     public function markAsPaid(): void
     {
         $this->status = 'paid';
@@ -60,21 +68,24 @@ class Payment extends Model
 
         $this->save();
     }
+
     public function markAsFailed(): void
     {
         $this->status = 'failed';
 
         $this->save();
     }
+
     public function canBeRefunded(): bool
     {
         return $this->isPaid();
     }
+
     public function markAsRefunded(): void
     {
-        if (!$this->canBeRefunded()) {
+        if (! $this->canBeRefunded()) {
             throw new LogicException(
-                'Este pagamento não pode ser reembolsado.'
+                'This payment cannot be refunded.'
             );
         }
 
@@ -82,6 +93,7 @@ class Payment extends Model
 
         $this->save();
     }
+
     public function getFormattedAmount(): string
     {
         return number_format(
@@ -89,6 +101,6 @@ class Payment extends Model
             2,
             ',',
             '.'
-        ) . ' €';
+        ).' €';
     }
 }
