@@ -18,22 +18,27 @@ class Barber extends Model
         'phone',
         'bio',
     ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
+
     public function reviews(): MorphMany
     {
         return $this->morphMany(Review::class, 'reviewable');
     }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
+
     public function appointments(): HasMany
     {
-        return $this->hasMany(Appointment::class, 'barbeiro_id');
+        return $this->hasMany(Appointment::class, 'barber_id');
     }
+
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -43,6 +48,7 @@ class Barber extends Model
             'service_id'
         );
     }
+
     public function getAverageRating(): float
     {
         return (float) $this->reviews()->avg('rating');
@@ -52,40 +58,45 @@ class Barber extends Model
     {
         return $this->reviews()->count();
     }
+
     public function getUpcomingAppointments()
     {
         return $this->appointments()
             ->where(function ($query) {
-                $query->whereDate('data', '>', today())
+                $query->whereDate('date', '>', today())
                     ->orWhere(function ($query) {
-                        $query->whereDate('data', today())
-                            ->whereTime('hora', '>=', now()->format('H:i:s'));
+                        $query->whereDate('date', today())
+                            ->whereTime('time', '>=', now()->format('H:i:s'));
                     });
             })
             ->whereIn('status', [
-                Status::Pendente->value,
-                Status::Confirmado->value,
+                Status::Pending->value,
+                Status::Confirmed->value,
             ])
-            ->orderBy('data')
-            ->orderBy('hora')
+            ->orderBy('date')
+            ->orderBy('time')
             ->get();
     }
+
     public function getCompletedAppointments()
     {
         return $this->appointments()
-            ->where('status', Status::Concluido->value)
+            ->where('status', Status::Completed->value)
             ->get();
     }
+
     public function getTotalAppointments(): int
     {
         return $this->appointments()->count();
     }
+
     public function canPerformService(Service $service): bool
     {
         return $this->services()
             ->whereKey($service->id)
             ->exists();
     }
+
     public function isAvailableAt(
         DateTimeInterface $dateTime,
         int $durationMinutes = 30
@@ -102,26 +113,26 @@ class Barber extends Model
 
         $appointments = $this->appointments()
             ->with('service')
-            ->whereDate('data', $start->toDateString())
+            ->whereDate('date', $start->toDateString())
             ->whereIn('status', [
-                Status::Pendente->value,
-                Status::Confirmado->value,
+                Status::Pending->value,
+                Status::Confirmed->value,
             ])
             ->get();
 
         foreach ($appointments as $appointment) {
-            if (!$appointment->hora) {
+            if (! $appointment->time) {
                 continue;
             }
 
             $appointmentStart = Carbon::parse(
-                Carbon::parse($appointment->data)->toDateString()
-                . ' '
-                . $appointment->hora
+                Carbon::parse($appointment->date)->toDateString()
+                .' '
+                .$appointment->time
             );
 
             $serviceDuration = (int) (
-                $appointment->service?->duracao ?? 30
+                $appointment->service?->duration_minutes ?? 30
             );
 
             $appointmentEnd = $appointmentStart

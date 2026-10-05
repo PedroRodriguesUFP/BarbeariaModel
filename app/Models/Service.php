@@ -9,19 +9,20 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Service extends Model
 {
     protected $fillable = [
-        'nome',
-        'descricao',
-        'preco',
-        'duracao',
-        'categoria',
+        'name',
+        'description',
+        'price',
+        'duration_minutes',
+        'category',
     ];
 
     protected function casts(): array
     {
         return [
-            'categoria' => Category::class,
+            'category' => Category::class,
         ];
     }
+
     public function reviews(): MorphMany
     {
         return $this->morphMany(
@@ -29,27 +30,31 @@ class Service extends Model
             'reviewable'
         );
     }
-    public function atualizarPreco(float $novoPreco): void
+
+    public function updatePrice(float $newPrice): void
     {
-        $this->preco = $novoPreco;
+        $this->price = $newPrice;
 
         $this->save();
     }
-    public function atualizarNome(string $novoNome): void
+
+    public function updateName(string $newName): void
     {
-        $this->nome = $novoNome;
+        $this->name = $newName;
 
         $this->save();
     }
-    public function atualizarDuracao(int $novaDuracao): void
+
+    public function updateDuration(int $newDuration): void
     {
-        $this->duracao = $novaDuracao;
+        $this->duration_minutes = $newDuration;
 
         $this->save();
     }
-    public function atualizarDescricao(string $novaDescricao): void
+
+    public function updateDescription(string $newDescription): void
     {
-        $this->descricao = $novaDescricao;
+        $this->description = $newDescription;
 
         $this->save();
     }

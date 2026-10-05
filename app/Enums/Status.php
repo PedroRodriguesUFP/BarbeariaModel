@@ -3,9 +3,9 @@
 namespace App\Enums;
 
 enum Status: string
-{   
-    case Pendente = 'pendente';
-    case Confirmado = 'confirmado';
-    case Cancelado = 'cancelado';
-    case Concluido = 'concluido';
+{
+    case Pending = 'pending';
+    case Confirmed = 'confirmed';
+    case Cancelled = 'cancelled';
+    case Completed = 'completed';
 }
