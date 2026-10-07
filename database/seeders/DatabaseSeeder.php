@@ -2,33 +2,28 @@
 
 namespace Database\Seeders;
 
-use App\Models\Barber;
-use App\Models\Client;
-use App\Models\Service;
+use App\Models\Appointment;
+use App\Models\Payment;
 use Illuminate\Database\Seeder;
 
-class ReviewSeeder extends Seeder
+class PaymentSeeder extends Seeder
 {
     public function run(): void
     {
-        $client = Client::first();
-        $service = Service::first();
-        $barber = Barber::first();
+        $appointment = Appointment::with('service')->first();
 
-        if ($client && $service) {
-            $service->reviews()->create([
-                'client_id' => $client->id,
-                'rating' => 5,
-                'comment' => 'Excellent service.',
-            ]);
+        if (!$appointment) {
+            return;
         }
 
-        if ($client && $barber) {
-            $barber->reviews()->create([
-                'client_id' => $client->id,
-                'rating' => 4,
-                'comment' => 'Very good barber.',
-            ]);
-        }
+        Payment::create([
+            'appointment_id' => $appointment->id,
+            'client_id' => $appointment->client_id,
+            'barber_id' => $appointment->barber_id,
+            'amount' => $appointment->service?->price ?? 12.00,
+            'method' => 'cash',
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
     }
 }
