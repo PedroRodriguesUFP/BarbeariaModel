@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Category;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Service extends Model
 {
@@ -58,4 +59,13 @@ class Service extends Model
 
         $this->save();
     }
+    public function barbers(): BelongsToMany
+{
+    return $this->belongsToMany(
+        Barber::class,
+        'barber_service',
+        'service_id',
+        'barber_id'
+    );
+}
 }
