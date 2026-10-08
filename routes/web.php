@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AppointmentController;
 
 Route::get('/', function () {
@@ -12,4 +13,4 @@ Route :: get('/appointments/create', [AppointmentController::class, 'create'])->
 Route :: post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
 Route :: get('/appointments/{id}', [AppointmentController::class, 'show'])->name('appointments.show');
 Route::resource('services', ServiceController::class);
- 
+Route::get('/checkout/{serviceId}', [PaymentController::class, 'checkout'])->name('checkout');
