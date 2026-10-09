@@ -10,9 +10,11 @@ use InvalidArgumentException;
 class Review extends Model
 {
     protected $fillable = [
-        'client_id',
-        'rating',
-        'comment',
+    'client_id',
+    'reviewable_type',
+    'reviewable_id',
+    'rating',
+    'comment',
     ];
 
     public function client(): BelongsTo

@@ -18,3 +18,5 @@ Route::resource('clients', ClientController::class);
 Route::resource('barbers', BarberController::class);
 Route::resource('payments', PaymentController::class);
 Route::resource('reviews', ReviewController::class);
+Route::get('/checkout/{serviceId}', [PaymentController::class, 'checkout'])
+    ->name('checkout');
