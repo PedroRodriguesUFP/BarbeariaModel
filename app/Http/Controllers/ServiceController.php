@@ -57,7 +57,7 @@ class ServiceController extends Controller
      * Show the form for editing the specified resource.
      */
     public function edit(Service $service)
-    {
+    { 
          return view('services.edit', compact('service'));
     }
 
