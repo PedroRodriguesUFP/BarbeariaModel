@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Enums\UserRole;
+use App\Models\Barber;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use App\Models\Barber;
 
 class BarberController extends Controller
 {
@@ -25,7 +25,14 @@ class BarberController extends Controller
     {
         // valida se o formulario é válido
         $request->validate([
-            'user_id' => 'required|exists:users,id|unique:barbers,user_id',
+            'user_id' => [
+                'required',
+                Rule::exists('users', 'id')->where(
+                    'role',
+                    UserRole::Barber->value
+                ),
+                'unique:barbers,user_id',
+            ],
             'phone' => 'nullable|string|max:255',
             'bio' => 'nullable|string',
         ]);
@@ -36,7 +43,9 @@ class BarberController extends Controller
             'bio' => $request->input('bio'),
         ]);
 
-        return redirect()->route('barbers.index')->with('success', 'Barber created successfully.');
+        return redirect()
+            ->route('barbers.index')
+            ->with('success', 'Barber created successfully.');
     }
 
     public function show($id)
@@ -44,7 +53,9 @@ class BarberController extends Controller
         $barber = Barber::with('user')->find($id);
 
         if (! $barber) {
-            throw new \Exception('Barber not found, please check if the Barber exists and try again.');
+            throw new \Exception(
+                'Barber not found, please check if the Barber exists and try again.'
+            );
         }
 
         return view('barbers.show', compact('barber'));
@@ -55,7 +66,9 @@ class BarberController extends Controller
         $barber = Barber::find($id);
 
         if (! $barber) {
-            throw new \Exception('Barber not found, please check if the Barber exists and try again.');
+            throw new \Exception(
+                'Barber not found, please check if the Barber exists and try again.'
+            );
         }
 
         return view('barbers.edit', compact('barber'));
@@ -66,7 +79,10 @@ class BarberController extends Controller
         $request->validate([
             'user_id' => [
                 'required',
-                'exists:users,id',
+                Rule::exists('users', 'id')->where(
+                    'role',
+                    UserRole::Barber->value
+                ),
                 Rule::unique('barbers', 'user_id')->ignore($id),
             ],
             'phone' => 'nullable|string|max:255',
@@ -82,9 +98,13 @@ class BarberController extends Controller
                 'bio' => $request->input('bio'),
             ]);
 
-            return redirect()->route('barbers.index')->with('success', 'Barber updated successfully.');
+            return redirect()
+                ->route('barbers.index')
+                ->with('success', 'Barber updated successfully.');
         } else {
-            throw new \Exception('Barber not found, please check if the Barber exists and try again.');
+            throw new \Exception(
+                'Barber not found, please check if the Barber exists and try again.'
+            );
         }
     }
 
@@ -95,9 +115,13 @@ class BarberController extends Controller
         if ($barber) {
             $barber->delete();
 
-            return redirect()->route('barbers.index')->with('success', 'Barber deleted successfully.');
+            return redirect()
+                ->route('barbers.index')
+                ->with('success', 'Barber deleted successfully.');
         } else {
-            throw new \Exception('Barber not found, please check if the Barber exists and try again.');
+            throw new \Exception(
+                'Barber not found, please check if the Barber exists and try again.'
+            );
         }
     }
 }
