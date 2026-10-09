@@ -15,6 +15,6 @@ Route::get('/', function () {
 Route::resource('appointments', AppointmentController::class);
 Route::resource('services', ServiceController::class);
 Route::resource('clients', ClientController::class);
-Route::resource('barbers', 'App\\Http\\Controllers\\BarberController');
+Route::resource('barbers', BarberController::class);
 Route::resource('payments', PaymentController::class);
 Route::resource('reviews', ReviewController::class);

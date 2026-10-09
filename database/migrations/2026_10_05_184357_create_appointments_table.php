@@ -16,6 +16,9 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('barber_id')->constrained()->cascadeOnDelete();
             $table->foreignId('service_id')->constrained()->cascadeOnDelete();
+            $table->date('date');
+            $table->time('time')->nullable();
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }
