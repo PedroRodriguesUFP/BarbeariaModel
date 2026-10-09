@@ -1,16 +1,20 @@
 <?php
 
 use App\Http\Controllers\ServiceController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\BarberController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ReviewController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
-Route :: get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
-Route :: get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
-Route :: post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
-Route :: get('/appointments/{id}', [AppointmentController::class, 'show'])->name('appointments.show');
+
+Route::resource('appointments', AppointmentController::class);
 Route::resource('services', ServiceController::class);
-Route::get('/checkout/{serviceId}', [PaymentController::class, 'checkout'])->name('checkout');
+Route::resource('clients', ClientController::class);
+Route::resource('barbers', 'App\\Http\\Controllers\\BarberController');
+Route::resource('payments', PaymentController::class);
+Route::resource('reviews', ReviewController::class);
