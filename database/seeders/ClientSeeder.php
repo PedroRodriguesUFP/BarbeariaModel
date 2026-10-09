@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use App\Models\Client;
 
 class ClientSeeder extends Seeder
 {
@@ -14,11 +15,12 @@ class ClientSeeder extends Seeder
      */
     public function run(): void
     {
-        $user = User::where('role', UserRole::Client->value)->firstOrFail();
-
-        Client::create([
-            'user_id' => $user->id,
+Client::create([
+            'name' => 'João Silva',
+            'email' => 'joao@example.com',
             'phone' => '912345678',
+            'id' => 1,
+            
         ]);
     }
 }

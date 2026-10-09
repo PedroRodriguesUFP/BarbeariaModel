@@ -1,6 +1,7 @@
 <?php
 
 namespace Database\Seeders;
+use App\Models\Barber;
 
 use App\Enums\UserRole;
 use App\Models\Barber;
@@ -15,15 +16,11 @@ class BarberSeeder extends Seeder
      */
     public function run(): void
     {
-        $user = User::where('role', UserRole::Barber->value)->firstOrFail();
-
-        $barber = Barber::create([
-            'user_id' => $user->id,
+        Barber::create([
+            'name' => 'Carlos Tesoura',
+            'email' => 'carlos@barbershop.com',
             'phone' => '923456789',
-            'bio' => 'Professional barber with experience in classic and modern cuts.',
+            'id' => 1,
         ]);
-
-        // Associate the barber with the existing services (many-to-many).
-        $barber->services()->attach(Service::pluck('id'));
     }
 }
