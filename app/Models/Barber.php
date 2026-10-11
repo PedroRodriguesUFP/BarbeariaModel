@@ -34,12 +34,13 @@ class Barber extends Model
         return $this->hasMany(Payment::class);
     }
 
+
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class, 'barber_id');
     }
 
-    public function services(): BelongsToMany
+    public function services(): BelongsToMany 
     {
         return $this->belongsToMany(
             Service::class,
