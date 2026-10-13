@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 
 class BarberController extends Controller
 {
+    // Lista todos os barbeiros.
     public function index()
     {
         $barbers = Barber::with('user')->get();
@@ -16,11 +17,13 @@ class BarberController extends Controller
         return view('barbers.index', compact('barbers'));
     }
 
+    // Apresenta o formulário de criação.
     public function create()
     {
         return view('barbers.create');
     }
 
+    // Valida e guarda um novo barbeiro.
     public function store(Request $request)
     {
         // valida se o formulario é válido
@@ -48,6 +51,7 @@ class BarberController extends Controller
             ->with('success', 'Barber created successfully.');
     }
 
+    // Apresenta um barbeiro específico.
     public function show($id)
     {
         $barber = Barber::with('user')->find($id);
@@ -61,6 +65,7 @@ class BarberController extends Controller
         return view('barbers.show', compact('barber'));
     }
 
+    // Apresenta o formulário de edição.
     public function edit($id)
     {
         $barber = Barber::find($id);
@@ -74,6 +79,7 @@ class BarberController extends Controller
         return view('barbers.edit', compact('barber'));
     }
 
+    // Valida e atualiza um barbeiro.
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -108,6 +114,7 @@ class BarberController extends Controller
         }
     }
 
+    // Apaga um barbeiro.
     public function destroy($id)
     {
         $barber = Barber::find($id);

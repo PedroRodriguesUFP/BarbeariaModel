@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 
 class ClientController extends Controller
 {
+    // Lista todos os clientes.
     public function index()
     {
         $clients = Client::with('user')->get();
@@ -16,11 +17,13 @@ class ClientController extends Controller
         return view('clients.index', compact('clients'));
     }
 
+    // Apresenta o formulário de criação.
     public function create()
     {
         return view('clients.create');
     }
 
+    // Valida e guarda um novo cliente.
     public function store(Request $request)
     {
         // valida se o formulário é válido
@@ -46,6 +49,7 @@ class ClientController extends Controller
             ->with('success', 'Client created successfully.');
     }
 
+    // Apresenta um cliente específico.
     public function show($id)
     {
         $client = Client::with('user')->find($id);
@@ -59,6 +63,7 @@ class ClientController extends Controller
         return view('clients.show', compact('client'));
     }
 
+    // Apresenta o formulário de edição.
     public function edit($id)
     {
         $client = Client::find($id);
@@ -72,6 +77,7 @@ class ClientController extends Controller
         return view('clients.edit', compact('client'));
     }
 
+    // Valida e atualiza um cliente.
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -104,6 +110,7 @@ class ClientController extends Controller
         }
     }
 
+    // Apaga um cliente.
     public function destroy($id)
     {
         $client = Client::find($id);

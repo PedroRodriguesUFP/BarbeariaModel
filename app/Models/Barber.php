@@ -19,27 +19,31 @@ class Barber extends Model
         'bio',
     ];
 
+    // Devolve os dados de utilizador do barbeiro.
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    // Devolve as avaliações do barbeiro.
     public function reviews(): MorphMany
     {
         return $this->morphMany(Review::class, 'reviewable');
     }
 
+    // Devolve os pagamentos do barbeiro.
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
-
+    // Devolve as marcações do barbeiro.
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class, 'barber_id');
     }
 
+    // Devolve os serviços do barbeiro.
     public function services(): BelongsToMany 
     {
         return $this->belongsToMany(
@@ -50,16 +54,19 @@ class Barber extends Model
         );
     }
 
+    // Calcula a classificação média do barbeiro.
     public function getAverageRating(): float
     {
         return (float) $this->reviews()->avg('rating');
     }
 
+    // Conta as avaliações do barbeiro.
     public function getReviewsCount(): int
     {
         return $this->reviews()->count();
     }
 
+    // Lista as próximas marcações do barbeiro.
     public function getUpcomingAppointments()
     {
         return $this->appointments()
@@ -79,6 +86,7 @@ class Barber extends Model
             ->get();
     }
 
+    // Lista as marcações concluídas do barbeiro.
     public function getCompletedAppointments()
     {
         return $this->appointments()
@@ -86,11 +94,13 @@ class Barber extends Model
             ->get();
     }
 
+    // Conta todas as marcações do barbeiro.
     public function getTotalAppointments(): int
     {
         return $this->appointments()->count();
     }
 
+    // Verifica se o barbeiro presta o serviço.
     public function canPerformService(Service $service): bool
     {
         return $this->services()
@@ -98,6 +108,7 @@ class Barber extends Model
             ->exists();
     }
 
+    // Verifica se o barbeiro está livre no horário indicado.
     public function isAvailableAt(
         DateTimeInterface $dateTime,
         int $durationMinutes = 30
