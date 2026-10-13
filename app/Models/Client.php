@@ -15,21 +15,25 @@ class Client extends Model
         'phone',
     ];
 
+    // Devolve os dados de utilizador do cliente.
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    // Devolve as avaliações do cliente.
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
     }
 
+    // Devolve as marcações do cliente.
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class, 'client_id');
     }
 
+    // Devolve os pagamentos associados às marcações.
     public function payments(): HasManyThrough
     {
         return $this->hasManyThrough(
@@ -40,6 +44,7 @@ class Client extends Model
         );
     }
 
+    // Lista as próximas marcações do cliente.
     public function getUpcomingAppointments()
     {
         return $this->appointments()
@@ -53,6 +58,7 @@ class Client extends Model
             ->get();
     }
 
+    // Lista as marcações concluídas do cliente.
     public function getCompletedAppointments()
     {
         return $this->appointments()
@@ -60,6 +66,7 @@ class Client extends Model
             ->get();
     }
 
+    // Lista as marcações canceladas do cliente.
     public function getCancelledAppointments()
     {
         return $this->appointments()
@@ -67,11 +74,13 @@ class Client extends Model
             ->get();
     }
 
+    // Conta as marcações do cliente.
     public function getTotalAppointments(): int
     {
         return $this->appointments()->count();
     }
 
+    // Verifica se o cliente já marcou com o barbeiro.
     public function hasAppointmentWith(Barber $barber): bool
     {
         return $this->appointments()
@@ -79,6 +88,7 @@ class Client extends Model
             ->exists();
     }
 
+    // Verifica se o cliente já concluiu o serviço.
     public function hasUsedService(Service $service): bool
     {
         return $this->appointments()

@@ -10,6 +10,7 @@ use Illuminate\Validation\Rule;
 
 class ReviewController extends Controller
 {
+    // Lista todas as avaliações.
     public function index()
     {
         $reviews = Review::with(['client.user', 'reviewable'])->get();
@@ -17,11 +18,13 @@ class ReviewController extends Controller
         return view('reviews.index', compact('reviews'));
     }
 
+    // Apresenta o formulário de criação.
     public function create()
     {
         return view('reviews.create');
     }
 
+    // Valida e guarda uma nova avaliação.
     public function store(Request $request)
     {
         // valida se o formulário é válido
@@ -63,6 +66,7 @@ class ReviewController extends Controller
             ->with('success', 'Review created successfully.');
     }
 
+    // Apresenta uma avaliação específica.
     public function show($id)
     {
         $review = Review::with(['client.user', 'reviewable'])->find($id);
@@ -76,6 +80,7 @@ class ReviewController extends Controller
         return view('reviews.show', compact('review'));
     }
 
+    // Apresenta o formulário de edição.
     public function edit($id)
     {
         $review = Review::find($id);
@@ -89,6 +94,7 @@ class ReviewController extends Controller
         return view('reviews.edit', compact('review'));
     }
 
+    // Valida e atualiza uma avaliação.
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -136,6 +142,7 @@ class ReviewController extends Controller
             ->with('success', 'Review updated successfully.');
     }
 
+    // Apaga uma avaliação.
     public function destroy($id)
     {
         $review = Review::find($id);

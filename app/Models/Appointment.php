@@ -19,6 +19,7 @@ class Appointment extends Model
         'barber_id',
     ];
 
+    // Define a conversão dos atributos do modelo.
     protected function casts(): array
     {
         return [
@@ -27,6 +28,7 @@ class Appointment extends Model
         ];
     }
 
+    // Devolve o cliente da marcação.
     public function client(): BelongsTo
     {
         return $this->belongsTo(
@@ -35,6 +37,7 @@ class Appointment extends Model
         );
     }
 
+    // Devolve o barbeiro da marcação.
     public function barber(): BelongsTo
     {
         return $this->belongsTo(
@@ -43,6 +46,7 @@ class Appointment extends Model
         );
     }
 
+    // Devolve o serviço da marcação.
     public function service(): BelongsTo
     {
         return $this->belongsTo(
@@ -51,11 +55,13 @@ class Appointment extends Model
         );
     }
 
+    // Devolve os pagamentos da marcação.
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
+    // Cria uma marcação pendente.
     public function makeAppointment(
         DateTime $date,
         string $clientId,
@@ -76,6 +82,7 @@ class Appointment extends Model
         $this->save();
     }
 
+    // Atualiza os dados da marcação.
     public function updateAppointment(
         DateTime $newDate,
         string $newClientId,
@@ -95,6 +102,7 @@ class Appointment extends Model
         $this->save();
     }
 
+    // Altera o estado da marcação.
     public function updateStatus(Status $newStatus): void
     {
         $this->status = $newStatus;
@@ -102,6 +110,7 @@ class Appointment extends Model
         $this->save();
     }
 
+    // Verifica se a marcação está pendente.
     public function isPending(): bool
     {
         if ($this->status === Status::Pending) {
@@ -111,6 +120,7 @@ class Appointment extends Model
         return false;
     }
 
+    // Verifica se a marcação está confirmada.
     public function isConfirmed(): bool
     {
         if ($this->status === Status::Confirmed) {
@@ -120,6 +130,7 @@ class Appointment extends Model
         return false;
     }
 
+    // Verifica se a marcação está cancelada.
     public function isCancelled(): bool
     {
         if ($this->status === Status::Cancelled) {
@@ -129,6 +140,7 @@ class Appointment extends Model
         return false;
     }
 
+    // Verifica se a marcação foi concluída.
     public function isCompleted(): bool
     {
         if ($this->status === Status::Completed) {
@@ -138,6 +150,7 @@ class Appointment extends Model
         return false;
     }
 
+    // Verifica se a marcação pode ser cancelada.
     public function canBeCancelled(): bool
     {
         if ($this->status == Status::Pending || $this->status === Status::Confirmed) {
@@ -146,18 +159,21 @@ class Appointment extends Model
 
         return false;
     }
+    // Confirma a marcação.
     public function confirmAppointment(): void
     {
         $this->status = Status::Confirmed;
         $this->save();
     }
 
+    // Marca a marcação como concluída.
     public function completeAppointment(): void
     {
         $this->status = Status::Completed;
         $this->save();
     }
 
+    // Cancela a marcação, se possível.
     public function cancelAppointment(): void
     {
         if ($this->canBeCancelled() == true) {

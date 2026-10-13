@@ -17,6 +17,7 @@ class Service extends Model
         'category',
     ];
 
+    // Define a conversão dos atributos do modelo.
     protected function casts(): array
     {
         return [
@@ -24,6 +25,7 @@ class Service extends Model
         ];
     }
 
+    // Devolve as avaliações do serviço.
     public function reviews(): MorphMany
     {
         return $this->morphMany(
@@ -32,6 +34,7 @@ class Service extends Model
         );
     }
 
+    // Atualiza o preço do serviço.
     public function updatePrice(float $newPrice): void
     {
         $this->price = $newPrice;
@@ -39,6 +42,7 @@ class Service extends Model
         $this->save();
     }
 
+    // Atualiza o nome do serviço.
     public function updateName(string $newName): void
     {
         $this->name = $newName;
@@ -46,6 +50,7 @@ class Service extends Model
         $this->save();
     }
 
+    // Atualiza a duração do serviço.
     public function updateDuration(int $newDuration): void
     {
         $this->duration_minutes = $newDuration;
@@ -53,12 +58,14 @@ class Service extends Model
         $this->save();
     }
 
+    // Atualiza a descrição do serviço.
     public function updateDescription(string $newDescription): void
     {
         $this->description = $newDescription;
 
         $this->save();
     }
+    // Devolve os barbeiros que prestam o serviço.
     public function barbers(): BelongsToMany
 {
     return $this->belongsToMany(

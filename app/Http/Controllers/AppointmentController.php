@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
+    // Lista todas as marcações.
     public function index()
     {
         $appointments = Appointment::with([
@@ -18,11 +19,13 @@ class AppointmentController extends Controller
         return view('appointments.index', compact('appointments'));
     }
 
+    // Apresenta o formulário de marcação.
     public function create()
     {
         return view('appointments.create');
     }
 
+    // Valida e guarda uma nova marcação.
     public function store(Request $request)
     {
         // valida se o formulário é válido
@@ -47,6 +50,7 @@ class AppointmentController extends Controller
             ->with('success', 'Appointment created successfully.');
     }
 
+    // Apresenta uma marcação específica.
     public function show($id)
     {
         $appointment = Appointment::with([
@@ -64,6 +68,7 @@ class AppointmentController extends Controller
         return view('appointments.show', compact('appointment'));
     }
 
+    // Apresenta o formulário de edição.
     public function edit($id)
     {
         $appointment = Appointment::find($id);
@@ -77,6 +82,7 @@ class AppointmentController extends Controller
         return view('appointments.edit', compact('appointment'));
     }
 
+    // Valida e atualiza uma marcação.
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -108,6 +114,7 @@ class AppointmentController extends Controller
         }
     }
 
+    // Apaga uma marcação.
     public function destroy($id)
     {
         $appointment = Appointment::find($id);

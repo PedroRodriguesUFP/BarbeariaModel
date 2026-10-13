@@ -11,6 +11,7 @@ use Stripe\Stripe;
 
 class PaymentController extends Controller
 {
+    // Lista todos os pagamentos.
     public function index()
     {
         $payments = Payment::with([
@@ -22,11 +23,13 @@ class PaymentController extends Controller
         return view('payments.index', compact('payments'));
     }
 
+    // Apresenta o formulário de criação.
     public function create()
     {
         return view('payments.create');
     }
 
+    // Valida e guarda um novo pagamento.
     public function store(Request $request)
     {
         // valida se o formulário é válido
@@ -71,6 +74,7 @@ class PaymentController extends Controller
             ->with('success', 'Payment created successfully.');
     }
 
+    // Apresenta um pagamento específico.
     public function show($id)
     {
         $payment = Payment::with([
@@ -88,6 +92,7 @@ class PaymentController extends Controller
         return view('payments.show', compact('payment'));
     }
 
+    // Apresenta o formulário de edição.
     public function edit($id)
     {
         $payment = Payment::find($id);
@@ -101,6 +106,7 @@ class PaymentController extends Controller
         return view('payments.edit', compact('payment'));
     }
 
+    // Valida e atualiza um pagamento.
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -152,6 +158,7 @@ class PaymentController extends Controller
         }
     }
 
+    // Apaga um pagamento.
     public function destroy($id)
     {
         $payment = Payment::find($id);
@@ -169,6 +176,7 @@ class PaymentController extends Controller
         }
     }
 
+    // Inicia o checkout do serviço selecionado.
     public function checkout(int $serviceId)
     {
         $service = Service::findOrFail($serviceId);
