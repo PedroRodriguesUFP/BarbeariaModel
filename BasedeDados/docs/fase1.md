@@ -1,201 +1,185 @@
-# Fase 1 — Análise e Modelação Conceptual
-
-## 1. Análise e âmbito
-
-O projeto pretende modelar a informação necessária à gestão de uma barbearia. O domínio inclui os utilizadores da aplicação, os serviços disponibilizados, as marcações, a disponibilidade dos barbeiros, as avaliações, os planos de mensalidade, as subscrições e os pagamentos.
-
-Não são criadas entidades distintas para **cliente** e **barbeiro**. Todos são utilizadores do sistema e o atributo **papel** determina as permissões principais de cada utilizador. Um utilizador com papel de barbeiro pode também utilizar o sistema como cliente e marcar um serviço com outro barbeiro.
-
-A disponibilidade de um barbeiro deve considerar não só as marcações em que presta o serviço, mas também marcações em que esse utilizador é cliente, bem como períodos de indisponibilidade registados no calendário.
-
-A vertente de pagamentos considera dois cenários: subscrições/mensalidades e serviços pontuais. Um utilizador pode aderir a um plano de mensalidade; quando não possui uma subscrição aplicável, um serviço pontual pode ser pago no estabelecimento.
-
-### Fora do âmbito da Fase 1
-
-Nesta fase não são tomadas decisões de implementação em PostgreSQL, não são definidas tabelas, tipos SQL, chaves estrangeiras, triggers, índices, papéis de PostgreSQL nem consultas SQL. Também não é implementada a interface de calendário; apenas são identificados os dados e regras que a suportarão nas fases seguintes.
+# ESPECIFICAÇÃO COMPLETA DE BASE DE DADOS E GLOSSÁRIO
+## Sistema Integrado de Gestão de Barbearia — Modelo Entidade-Associação (EA)
 
 ---
 
-## 2. Glossário
-
-| Conceito | Definição |
-|---|---|
-| Utilizador | Pessoa registada no sistema. Pode possuir papel de cliente, barbeiro ou administrador. |
-| Cliente | Papel funcional de um utilizador quando marca ou recebe um serviço. Não constitui uma entidade separada. |
-| Barbeiro | Utilizador autorizado a realizar serviços e a gerir a sua agenda. Pode também agir como cliente. |
-| Administrador | Utilizador com necessidades de gestão global da informação do sistema. |
-| Serviço | Tipo de atendimento disponibilizado pela barbearia, como corte, barba ou outro serviço. |
-| Marcação | Reserva de um serviço para uma determinada data e hora, associando um cliente, um barbeiro e um serviço. |
-| Disponibilidade | Períodos em que um barbeiro pode aceitar marcações, considerando marcações existentes e bloqueios de agenda. |
-| Indisponibilidade | Período registado por um barbeiro em que não pode receber marcações, por exemplo por folga, pausa ou compromisso. |
-| Avaliação | Classificação e comentário efetuados por um utilizador após um atendimento, incidindo sobre um barbeiro ou um serviço. |
-| Plano de mensalidade | Oferta com preço e condições definidas que pode ser subscrita por um utilizador. |
-| Subscrição | Adesão de um utilizador a um plano de mensalidade durante um determinado período. |
-| Pagamento | Registo de um valor pago ou a pagar, relacionado com uma subscrição ou com um atendimento pontual. |
+## ÍNDICE
+1. Glossário e Dicionário de Dados
+   1.1. Descrição Geral do Sistema
+   1.2. Especificação de Entidades e Atributos
+   1.3. Dicionário Sintético de Atributos
+   1.4. Matriz de Relacionamentos e Cardinalidades
+2. Requisitos, Regras e Necessidades de Acesso
+   2.1. Requisitos de Dados (RD01 a RD09)
+   2.2. Regras de Negócio (RN01 a RN06)
+   2.3. Atores e Necessidades de Acesso
+   2.4. Necessidades de Informação (NI01 a NI08)
+   2.5. Matriz de Rastreabilidade
 
 ---
 
-## 3. Requisitos de dados
+# CAPÍTULO 1: GLOSSÁRIO E DICIONÁRIO DE DADOS
 
-**RD01 —** O sistema deverá representar os utilizadores, incluindo informação de identificação, contacto, estado e papel funcional.
-
-**RD02 —** O sistema deverá representar os serviços disponibilizados, incluindo designação, descrição, preço, duração, categoria e estado de disponibilidade.
-
-**RD03 —** Deverá ser possível representar quais os serviços que cada utilizador com papel de barbeiro está habilitado a realizar.
-
-**RD04 —** O sistema deverá representar marcações, incluindo cliente, barbeiro, serviço, data, hora e estado.
-
-**RD05 —** Deverá ser possível representar períodos de indisponibilidade de utilizadores com papel de barbeiro.
-
-**RD06 —** O sistema deverá permitir representar avaliações efetuadas por utilizadores, incluindo classificação, comentário e o respetivo objeto de avaliação.
-
-**RD07 —** Deverão ser representados planos de mensalidade, incluindo designação, preço, descrição, condições e estado.
-
-**RD08 —** Deverão ser representadas as subscrições dos utilizadores aos planos de mensalidade, incluindo período e estado.
-
-**RD09 —** O sistema deverá representar pagamentos, incluindo valor, método, estado e data de pagamento.
-
-**RD10 —** Deverá ser possível distinguir pagamentos associados a mensalidades de pagamentos relativos a atendimentos pontuais.
-
-**RD11 —** A informação deverá permitir determinar a agenda e a disponibilidade de cada barbeiro numa data e hora específicas.
-
-**RD12 —** A informação deverá permitir conhecer o histórico de marcações, pagamentos, subscrições e avaliações de um utilizador.
+## 1.1. Descrição Geral do Sistema
+O sistema visa a gestão operacional e financeira de uma barbearia multi-serviço. A arquitetura de dados assenta no modelo Entidade-Associação, cobrindo o ciclo de vida dos utilizadores (clientes, barbeiros e administradores), catálogo de serviços, agendamentos, pagamentos avulsos, planos de subscrição mensal e avaliações de satisfação.
 
 ---
 
-## 4. Regras de negócio
+## 1.2. Especificação de Entidades e Atributos
 
-**RN01 —** Cada utilizador deverá possuir um email único no domínio considerado.
+### UTILIZADOR
+Entidade central unificada que representa qualquer pessoa com conta registada no sistema. Modela Clientes, Barbeiros e Administradores através de polimorfismo baseado no papel.
+- nome: Texto (Obrigatório). Nome completo do utilizador.
+- email: Texto (Obrigatório, Identificador Natural Único - UK). Endereço de correio eletrónico de acesso.
+- palavra_passe: Hash (Obrigatório). Credencial encriptada.
+- papel: Enumeração ('admin', 'barbeiro', 'cliente') (Obrigatório). Define o tipo e permissões do utilizador.
+- telefone: Texto (Opcional, Clientes). Contacto telefónico.
+- nif: Texto (Opcional, Clientes). Número de Identificação Fiscal.
+- biografia: Texto (Opcional, Barbeiros). Apresentação profissional.
 
-**RN02 —** O papel de um utilizador determina as suas permissões principais, mas um utilizador com papel de barbeiro pode também realizar ações de cliente.
+### CALENDARIO
+Define a janela temporal de disponibilidade de trabalho do barbeiro. Existe numa relação exclusiva de 1:1 com utilizadores cujo papel é 'barbeiro'.
+- nome: Texto (Opcional). Designação do calendário.
+- dias_trabalho: Array/Texto (Obrigatório). Dias da semana de trabalho.
+- hora_inicio: Hora (Obrigatório). Horário de início do turno.
+- hora_fim: Hora (Obrigatório). Horário de término do turno.
 
-**RN03 —** Apenas utilizadores com papel de barbeiro podem ser selecionados para realizar uma marcação.
+### SERVICO
+Catálogo de tratamentos e procedimentos disponibilizados pela barbearia.
+- nome: Texto (Obrigatório). Denominação do serviço.
+- descricao: Texto (Opcional). Detalhes e especificações.
+- preco: Decimal (Obrigatório). Valor monetário unitário.
+- duracao_minutos: Inteiro (Obrigatório). Tempo estimado em minutos.
+- categoria: Enumeração ('cabelo', 'barba', 'cabelo e barba', 'degradee', 'coloracao') (Obrigatório).
+- ativo: Booleano (Obrigatório). Indicador de disponibilidade no catálogo.
 
-**RN04 —** Cada marcação associa exatamente um cliente, um barbeiro e um serviço.
+### MARCACAO
+Registo de reserva de um serviço efetuado por um cliente com um barbeiro para um determinado dia e hora.
+- data: Data (Obrigatório). Dia do agendamento.
+- hora: Hora (Opcional). Horário do agendamento.
+- estado: Enumeração ('pendente', 'confirmada', 'cancelada', 'concluida') (Obrigatório). Ciclo de vida da reserva.
 
-**RN05 —** O barbeiro associado a uma marcação deverá estar habilitado a realizar o serviço escolhido.
+### PAGAMENTO
+Registo financeiro da transação monetária. Origina-se de forma exclusiva a partir de uma Marcação individual ou de uma Subscrição mensal.
+- montante: Decimal (Obrigatório). Valor financeiro cobrado.
+- metodo: Texto (Obrigatório). Meio de pagamento utilizado.
+- estado: Enumeração ('pendente', 'pago', 'falhado', 'reembolsado') (Obrigatório).
+- data_pagamento: Timestamp (Opcional). Data e hora do processamento.
 
-**RN06 —** Um barbeiro não pode realizar duas marcações com sobreposição temporal.
+### PLANO_SUBSCRICAO
+Pacote comercial de avença mensal oferecido aos clientes.
+- nome: Texto (Obrigatório). Nome do plano.
+- preco_mensal: Decimal (Obrigatório). Valor cobrado mensalmente.
+- cortes_por_mes: Inteiro (Obrigatório). Quota máxima de cortes/serviços incluídos por mês.
+- ativo: Booleano (Obrigatório). Indicador de comercialização.
 
-**RN07 —** Quando um utilizador com papel de barbeiro possui uma marcação como cliente, esse período deve ser considerado ocupado na sua própria agenda.
+### SUBSCRICAO
+Adesão ativa ou histórico de um cliente a um plano de subscrição.
+- data_inicio: Data (Obrigatório). Início do contrato.
+- data_fim: Data (Opcional). Expiração/término do contrato.
+- estado: Enumeração ('ativa', 'suspensa', 'cancelada', 'expirada') (Obrigatório).
 
-**RN08 —** Períodos de indisponibilidade registados pelo barbeiro impedem a aceitação de marcações sobrepostas.
-
-**RN09 —** O cliente e o barbeiro de uma mesma marcação devem ser utilizadores distintos.
-
-**RN10 —** Uma avaliação só pode ser registada no contexto de um atendimento concluído.
-
-**RN11 —** Cada avaliação incide sobre exatamente um alvo: um barbeiro ou um serviço.
-
-**RN12 —** Uma classificação deverá situar-se entre 1 e 5.
-
-**RN13 —** Cada subscrição pertence a um único utilizador e corresponde a um único plano de mensalidade.
-
-**RN14 —** Uma subscrição possui um período de validade e um estado que permite determinar se está ativa.
-
-**RN15 —** Um pagamento representa a liquidação de uma subscrição ou de um atendimento pontual, não de ambos em simultâneo.
-
-**RN16 —** Um atendimento pontual sem mensalidade aplicável pode ser pago no estabelecimento.
-
-**RN17 —** O preço e as condições de um plano de mensalidade devem estar definidos antes de existirem novas adesões ao plano.
-
----
-
-## 5. Atores e necessidades de acesso
-
-| Ator / papel | Necessidades de acesso |
-|---|---|
-| Utilizador / Cliente | Consultar serviços e barbeiros; consultar disponibilidade; criar e consultar marcações; cancelar uma marcação quando permitido; consultar planos; aderir a mensalidades; consultar os seus pagamentos e subscrições; registar e consultar as suas avaliações. |
-| Barbeiro | Possui também as necessidades de um cliente. Adicionalmente necessita de consultar a sua agenda, consultar as marcações em que presta serviços, atualizar o estado dos atendimentos, consultar os serviços que realiza e registar períodos de indisponibilidade. |
-| Administrador | Consultar e gerir a informação global do domínio, incluindo utilizadores, serviços, habilitações dos barbeiros, marcações, planos de mensalidade, subscrições, pagamentos e avaliações. |
-
-Nesta fase estas necessidades são descritas ao nível do domínio e não correspondem ainda a papéis ou privilégios específicos de PostgreSQL.
-
----
-
-## 6. Necessidades de informação
-
-**Q01 —** Que barbeiros estão disponíveis para realizar um determinado serviço numa data e hora?
-
-**Q02 —** Qual é a agenda de um barbeiro num determinado dia ou período?
-
-**Q03 —** Quais são as próximas marcações de um utilizador como cliente?
-
-**Q04 —** Quais são as próximas marcações de um utilizador como barbeiro?
-
-**Q05 —** Que serviços está cada barbeiro habilitado a realizar?
-
-**Q06 —** Que períodos de indisponibilidade possui um barbeiro?
-
-**Q07 —** Quais são os barbeiros com melhor classificação média?
-
-**Q08 —** Quais são os serviços com melhor classificação média?
-
-**Q09 —** Que utilizadores possuem uma subscrição ativa e qual é o respetivo plano?
-
-**Q10 —** Quantas subscrições ativas existem por plano de mensalidade?
-
-**Q11 —** Que pagamentos se encontram pendentes, pagos, falhados ou reembolsados?
-
-**Q12 —** Qual é o histórico de pagamentos de um determinado utilizador?
-
-**Q13 —** Que marcações concluídas ainda não possuem avaliação?
-
-**Q14 —** Qual é o histórico de atendimentos realizados por um barbeiro?
-
-**Q15 —** Em que períodos um utilizador com papel de barbeiro está ocupado por uma marcação própria como cliente?
-
-Estas perguntas serão concretizadas através de consultas SQL nas fases seguintes.
+### AVALIACAO
+Registo de satisfação e opinião submetido por um cliente.
+- classificacao: Inteiro / TinyInt (1 a 5) (Obrigatório). Nota numérica de avaliação.
+- comentario: Texto (Opcional). Parecer textual do cliente.
 
 ---
 
-## 7. Modelo conceptual ER
+## 1.3. Dicionário Sintético de Atributos
 
-O modelo conceptual encontra-se em `modelo/modelo_conceptual_barbearia.drawio`, acompanhado por uma versão visual em `modelo/modelo_conceptual_barbearia.svg`.
-
-### Entidades principais
-
-- **UTILIZADOR** — representa todas as pessoas registadas, independentemente do papel.
-- **SERVIÇO** — representa os serviços disponibilizados pela barbearia.
-- **MARCAÇÃO** — representa a reserva de um serviço entre um cliente e um barbeiro.
-- **INDISPONIBILIDADE** — representa períodos em que um barbeiro não pode aceitar marcações.
-- **AVALIAÇÃO** — representa classificações e comentários associados a um atendimento.
-- **PLANO_MENSALIDADE** — representa ofertas de subscrição disponibilizadas pela barbearia.
-- **SUBSCRIÇÃO** — representa a adesão de um utilizador a um plano.
-- **PAGAMENTO** — representa valores pagos ou a pagar.
-
-### Relações conceptuais relevantes
-
-- Um utilizador **agenda** marcações enquanto cliente.
-- Um utilizador com papel de barbeiro **realiza** marcações.
-- Cada marcação **corresponde a** um serviço.
-- Utilizadores com papel de barbeiro **executam** serviços numa relação N:M.
-- Um utilizador com papel de barbeiro **regista** períodos de indisponibilidade.
-- Um utilizador **escreve** avaliações.
-- Uma avaliação **incide sobre** um barbeiro ou um serviço, de forma exclusiva.
-- Um utilizador **adere a** subscrições.
-- Cada subscrição **corresponde a** um plano de mensalidade.
-- Um utilizador **efetua** pagamentos.
-- Um pagamento pode **liquidar** uma subscrição ou um atendimento pontual, de forma exclusiva.
-
-### Decisão de modelação: cliente e barbeiro
-
-Não são utilizadas entidades separadas para cliente e barbeiro. Ambos correspondem à entidade **UTILIZADOR**, diferenciada pelo papel e pelas relações em que participa. Esta decisão permite representar naturalmente o caso de um barbeiro que marca um serviço com outro barbeiro e evita duplicação de informação pessoal.
+| Entidade | Atributo | Tipo / Domínio | Obrigatoriedade | Notas de Campo |
+| :--- | :--- | :--- | :--- | :--- |
+| UTILIZADOR | email | VARCHAR / Email | Obrigatório (UK) | Chave natural de acesso |
+| UTILIZADOR | papel | ENUM | Obrigatório | 'admin', 'barbeiro', 'cliente' |
+| SERVICO | categoria | ENUM | Obrigatório | Cabelo, Barba, Degradee, etc. |
+| MARCACAO | estado | ENUM | Obrigatório | Pendente, Confirmada, Concluída, Cancelada |
+| PLANO_SUBSCRICAO | cortes_por_mes | INTEGER | Obrigatório | Quota limite mensal do plano |
+| AVALIACAO | classificacao | TINYINT (1-5) | Obrigatório | Nota de satisfação quantitativa |
 
 ---
 
-## 8. Checklist da Fase 1
+## 1.4. Matriz de Relacionamentos e Cardinalidades
 
-- [x] Análise e delimitação do âmbito
-- [x] Glossário
-- [x] Requisitos de dados numerados
-- [x] Regras de negócio numeradas
-- [x] Atores e necessidades de acesso
-- [x] Necessidades de informação numeradas
-- [x] Modelo conceptual ER em notação de Chen
-- [x] Representação visual do modelo
-- [x] Ficheiro editável do modelo
-- [x] README como ponto de entrada
-- [ ] Confirmar com o docente que o contexto **Barbearia** está autorizado
-- [ ] Rever nomes e números dos elementos do grupo
-- [ ] Fazer commits finais e criar a tag/release **v1.0**
+| Entidade Origem | Relação (Verbo) | Entidade Destino | Cardinalidade | Descrição Funcional |
+| :--- | :--- | :--- | :--- | :--- |
+| UTILIZADOR | possui | CALENDARIO | 1 : (0,1) | Calendário exclusivo do barbeiro |
+| UTILIZADOR | agenda / realiza | MARCACAO | 1 : (0,N) | Cliente agenda; Barbeiro executa |
+| SUBSCRICAO | cobre | MARCACAO | (0,1) : (0,N) | Subscrição isenta pagamento direto |
+| MARCACAO / SUBSCRICAO | origina | PAGAMENTO | (0,1) : (0,N) | Gera receita monetária única |
+| PLANO_SUBSCRICAO | é contratado em | SUBSCRICAO | 1 : (0,N) | Modelo comercial da subscrição |
+
+---
+
+# CAPÍTULO 2: ESPECIFICAÇÃO DE REQUISITOS, REGRAS E ACESSOS
+
+## 2.1. Requisitos de Dados (RD)
+
+- RD01 — Identificação de Utilizadores e Perfis: O sistema deve registar os utilizadores com o seu nome completo, endereço de correio eletrónico (identificador natural único), palavra-passe encriptada e o papel desempenhado na plataforma (Cliente, Barbeiro ou Administrador).
+- RD02 — Dados de Perfil e Contacto Específicos: Deve ser possível armazenar informação suplementar associada ao papel do utilizador, nomeadamente número de contacto telefónico e NIF para clientes, e biografia profissional/apresentação para barbeiros.
+- RD03 — Horários e Calendário dos Barbeiros: O sistema deve representar a agenda de disponibilidade dos barbeiros, incluindo os dias da semana em que trabalham e o respetivo horário de início e término do turno diário.
+- RD04 — Catálogo de Serviços e Categorias: A base de dados deve manter o catálogo de serviços oferecidos pela barbearia, contendo nome, descrição detalhada, preço monetário, duração estimada em minutos, categoria (ex.: cabelo, barba, degradação, coloração) e indicação do estado ativo/inativo.
+- RD05 — Marcações e Ciclo de Vida do Agendamento: Deve ser registada cada reserva realizada por um cliente com um barbeiro para a prestação de um determinado serviço, armazenando a data, hora agendada e o estado do agendamento (pendente, confirmada, cancelada ou concluída).
+- RD06 — Planos de Subscrição Recorrente: O sistema deve representar os planos de avença mensal disponíveis para contratação, com indicação do nome do plano, preço fixo mensal, número máximo de cortes/serviços incluídos por mês e estado ativo.
+- RD07 — Contratos de Subscrição de Clientes: Deve ser mantido o histórico e estado das subscrições ativas dos clientes, incluindo a data de início do contrato, data de fim/renovação e situação atual (ativa, suspensa, cancelada, expirada).
+- RD08 — Transações Financeiras e Pagamentos: A base de dados deve registar todas as transações efetuadas, contendo o montante, método de pagamento, data e hora de processamento e estado financeiro (pendente, pago, falhado ou reembolsado).
+- RD09 — Avaliações e Satisfação de Clientes: O sistema deve guardar o feedback deixado pelos clientes, composto por uma pontuação quantitativa numa escala de 1 a 5 e um comentário textual opcional.
+
+---
+
+## 2.2. Regras de Negócio (RN)
+
+- RN01 — Unicidade de Utilizador: O e-mail é o identificador único do utilizador no sistema. Não podem existir duas contas registadas com o mesmo endereço eletrónico.
+- RN02 — Exclusividade do Calendário: Apenas utilizadores com o papel 'barbeiro' possuem um calendário de trabalho. Clientes e administradores não possuem calendário.
+- RN03 — Habilitação de Serviço: Um barbeiro só pode ser associado a marcações de serviços que esteja devidamente habilitado a executar no seu perfil profissional.
+- RN04 — Origem Única de Pagamento: Cada registo de pagamento associa-se de forma estritamente exclusiva a UMA marcação avulsa OU a UMA subscrição mensal.
+- RN05 — Cobertura e Quota de Subscrição: Marcações realizadas por clientes com subscrição ativa não originam pagamentos avulsos, desde que cobertas pela subscrição. Os cortes disponíveis no mês resultam do seguinte cálculo:
+  $\text{Cortes\_Disponíveis} = \text{PLANO\_SUBSCRICAO.cortes\_por\_mes} - \text{Marcacoes\_Cobertas\_No\_Mes}$
+- RN06 — Exclusividade de Alvo em Avaliações: Uma avaliação submetida por um cliente deve incidir exatamente sobre UM Barbeiro OU sobre UM Serviço, garantindo a diferenciação entre a qualidade do atendimento pessoal e a qualidade técnica do procedimento.
+
+---
+
+## 2.3. Atores e Necessidades de Acesso
+
+### Cliente
+- Consultar o catálogo de serviços, preços, duração e biografia dos barbeiros.
+- Consultar a disponibilidade de horários dos barbeiros e efetuar/cancelar marcações.
+- Consultar, contratar e gerir os seus planos de subscrição e histórico de pagamentos.
+- Registar avaliações e comentários aos serviços usufruídos ou barbeiros atendentes.
+
+### Barbeiro
+- Consultar a sua agenda diária e semanal de marcações e serviços previstos.
+- Configurar e atualizar o seu calendário de disponibilidade (dias de trabalho e horários).
+- Atualizar o estado das suas marcações (confirmar agendamentos e assinalar conclusões).
+- Consultar o seu histórico de serviços realizados e as avaliações recebidas dos clientes.
+
+### Gestor / Admin
+- Registar, atualizar e desativar contas de utilizadores (clientes e barbeiros).
+- Gerir o catálogo de serviços (preços, categorias, duração) e planos de subscrição.
+- Consultar relatórios operacionais globais, receitas financeiras e taxas de ocupação.
+- Auditar todas as transações, cancelamentos e métricas de satisfação da barbearia.
+
+---
+
+## 2.4. Necessidades de Informação (Perguntas Relevantes)
+
+- NI01 — Barbeiros Mais Bem Avaliados: Quais são os barbeiros que apresentam a maior classificação média de avaliação no último trimestre e quantos comentários receberam?
+- NI02 — Ocupação e Volume por Barbeiro: Qual é o número total de cortes/serviços concluídos e o volume de horas trabalhadas por cada barbeiro no mês transato?
+- NI03 — Adesão a Subscrições: Quantos clientes possuem atualmente uma subscrição ativa e qual é o plano de subscrição com maior número de adesões?
+- NI04 — Saldo de Cortes de Cliente: Qual é o número de cortes ainda disponíveis no mês corrente para um determinado cliente titular de uma subscrição ativa?
+- NI05 — Receita Monetária por Origem: Qual foi o faturamento total gerado por serviços avulsos comparado com a receita de mensalidades de subscrições num dado mês?
+- NI06 — Serviços Mais Requisitados: Quais os serviços mais procurados pelos clientes por categoria (cabelo, barba, coloração, etc.) ao longo do último ano?
+- NI07 — Agenda Pendente do Dia: Quais são as marcações que se encontram no estado 'pendente' de confirmação para a data de hoje, organizadas por barbeiro?
+- NI08 — Taxa de Cancelamentos: Qual é a percentagem e número absoluto de marcações canceladas em relação ao total de agendamentos efetuados por mês?
+
+---
+
+## 2.5. Matriz de Rastreabilidade (Requisitos vs. Atores vs. Regras)
+
+| Requisito de Dados | Atores Impactados | Regras de Negócio Associadas |
+| :--- | :--- | :--- |
+| RD01, RD02 (Utilizadores e Perfis) | Cliente, Barbeiro, Gestor | RN01 (Unicidade E-mail) |
+| RD03, RD05 (Calendário e Marcações) | Cliente, Barbeiro | RN02, RN03 (Calendário / Habilitação) |
+| RD06, RD07 (Planos e Subscrições) | Cliente, Gestor | RN05 (Quota de Subscrição) |
+| RD08 (Pagamentos e Transações) | Cliente, Gestor | RN04 (Exclusividade Origem) |
+| RD09 (Avaliações de Clientes) | Cliente, Barbeiro, Gestor | RN06 (Alvo da Avaliação) |
