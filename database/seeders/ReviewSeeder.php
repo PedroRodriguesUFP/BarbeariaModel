@@ -2,30 +2,38 @@
 
 namespace Database\Seeders;
 
-use App\Models\Barber;
-use App\Models\Client;
+use App\Enums\UserRole;
 use App\Models\Service;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class ReviewSeeder extends Seeder
 {
     public function run(): void
     {
-        $client = Client::first();
-        $service = Service::first();
-        $barber = Barber::first();
+        $reviewer = User::where(
+            'role',
+            UserRole::Client->value
+        )->first();
 
-        if ($client && $service) {
+        $barber = User::where(
+            'role',
+            UserRole::Barber->value
+        )->first();
+
+        $service = Service::first();
+
+        if ($reviewer && $service) {
             $service->reviews()->create([
-                'client_id' => $client->id,
+                'reviewer_id' => $reviewer->id,
                 'rating' => 5,
                 'comment' => 'Excellent service.',
             ]);
         }
 
-        if ($client && $barber) {
-            $barber->reviews()->create([
-                'client_id' => $client->id,
+        if ($reviewer && $barber) {
+            $barber->reviewsReceived()->create([
+                'reviewer_id' => $reviewer->id,
                 'rating' => 4,
                 'comment' => 'Very good barber.',
             ]);

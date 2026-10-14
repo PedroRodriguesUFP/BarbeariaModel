@@ -3,32 +3,39 @@
 namespace Database\Seeders;
 
 use App\Enums\Status;
+use App\Enums\UserRole;
 use App\Models\Appointment;
-use App\Models\Barber;
-use App\Models\Client;
 use App\Models\Service;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class AppointmentSeeder extends Seeder
 {
     public function run(): void
     {
-        $client = Client::first();
-        $barber = Barber::first();
+        $customer = User::where(
+            'role',
+            UserRole::Client->value
+        )->first();
+
+        $barber = User::where(
+            'role',
+            UserRole::Barber->value
+        )->first();
+
         $service = Service::first();
 
-        if (! $client || ! $barber || ! $service) {
+        if (! $customer || ! $barber || ! $service) {
             return;
         }
 
         Appointment::create([
-            'client_id' => $client->id,
+            'customer_id' => $customer->id,
             'barber_id' => $barber->id,
             'service_id' => $service->id,
             'date' => now()->addDay()->toDateString(),
             'time' => '10:00',
             'status' => Status::Pending->value,
         ]);
-        
     }
 }
