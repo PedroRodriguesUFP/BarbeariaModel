@@ -13,14 +13,14 @@ class AppointmentSeeder extends Seeder
 {
     public function run(): void
     {
-        $client = Client::first();
-        $barber = Barber::first();
-        $service = Service::first();
-
+        $client = Client::first(); // Obtém o primeiro cliente do banco de dados
+        $barber = Barber::first(); // Obtém o primeiro cabeleireiro do banco de dados
+        $service = Service::first(); // Obtém o primeiro serviço do banco de dados
+  // se algum dos modelos não existir, o seeder não cria o agendamento
         if (! $client || ! $barber || ! $service) {
             return;
         }
-
+    
         Appointment::create([
             'client_id' => $client->id,
             'barber_id' => $barber->id,

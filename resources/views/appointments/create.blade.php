@@ -1,27 +1,60 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novo agendamento</title>
-</head>
-<body class="bg-gray-50 text-gray-900">
-    <main class="mx-auto max-w-2xl px-4 py-10">
-        <h1 class="mb-6 text-2xl font-bold">Novo agendamento</h1>
-        @if ($errors->any())
-            <ul class="mb-4 list-inside list-disc rounded border border-red-200 bg-red-50 p-3 text-red-800">
-                @foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach
-            </ul>
-        @endif
-        <form class="space-y-4 rounded border border-gray-200 bg-white p-6" action="{{ route('appointments.store') }}" method="POST">
-            @csrf
-            <div><label class="mb-1 block font-medium" for="client_id">ID do cliente</label><input class="w-full rounded border border-gray-300 px-3 py-2" id="client_id" name="client_id" type="number" min="1" value="{{ old('client_id') }}" required></div>
-            <div><label class="mb-1 block font-medium" for="barber_id">ID do barbeiro</label><input class="w-full rounded border border-gray-300 px-3 py-2" id="barber_id" name="barber_id" type="number" min="1" value="{{ old('barber_id') }}" required></div>
-            <div><label class="mb-1 block font-medium" for="service_id">ID do serviço</label><input class="w-full rounded border border-gray-300 px-3 py-2" id="service_id" name="service_id" type="number" min="1" value="{{ old('service_id') }}" required></div>
-            <div><label class="mb-1 block font-medium" for="date">Data</label><input class="w-full rounded border border-gray-300 px-3 py-2" id="date" name="date" type="date" value="{{ old('date') }}" required></div>
-            <div><label class="mb-1 block font-medium" for="time">Hora</label><input class="w-full rounded border border-gray-300 px-3 py-2" id="time" name="time" type="time" value="{{ old('time') }}" required></div>
-            <div class="flex gap-3"><button class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700" type="submit">Criar agendamento</button><a class="rounded border border-gray-300 px-4 py-2 hover:bg-gray-100" href="{{ route('appointments.index') }}">Voltar</a></div>
-        </form>
-    </main>
-</body>
-</html>
+@extends('layouts.app')
+
+@section('content')
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="bg-neutral-800 border border-neutral-700 shadow-2xl rounded-xl overflow-hidden">
+        <div class="px-6 py-6 border-b border-neutral-700 bg-neutral-800/50">
+            <h3 class="text-2xl leading-6 font-bold text-white">Agendar Nova Marcação</h3>
+            <p class="mt-2 max-w-2xl text-sm text-gray-400">Selecione o serviço, o seu barbeiro preferido e a hora.</p>
+        </div>
+
+        <div class="px-6 py-8">
+            <!-- Preservação rigorosa da action e do método -->
+            <form action="{{ route('appointments.store') }}" method="POST" class="space-y-6">
+                @csrf
+
+                <!-- Serviço -->
+                <div>
+                    <label for="service_id" class="block text-sm font-medium text-gray-300">Serviço</label>
+                    <select id="service_id" name="service_id" required class="mt-1 block w-full pl-3 pr-10 py-3 text-base bg-neutral-900 border-neutral-600 text-white focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm rounded-md transition-colors">
+                        <option value="" disabled selected>Escolha um serviço...</option>
+                        @foreach($services as $service)
+                            <option value="{{ $service->id }}">{{ $service->name }} ({{ $service->price }}€)</option>
+                        @endforeach
+                    </select>
+                    @error('service_id') <span class="text-red-400 text-xs mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- Barbeiro -->
+                <div>
+                    <label for="barber_id" class="block text-sm font-medium text-gray-300">Barbeiro</label>
+                    <select id="barber_id" name="barber_id" required class="mt-1 block w-full pl-3 pr-10 py-3 text-base bg-neutral-900 border-neutral-600 text-white focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm rounded-md transition-colors">
+                        <option value="" disabled selected>Sem preferência / Escolha um barbeiro...</option>
+                        @foreach($barbers as $barber)
+                            <option value="{{ $barber->id }}">{{ $barber->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('barber_id') <span class="text-red-400 text-xs mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- Data e Hora -->
+                <div>
+                    <label for="appointment_time" class="block text-sm font-medium text-gray-300">Data e Hora</label>
+                    <input type="datetime-local" name="appointment_time" id="appointment_time" required class="mt-1 block w-full py-3 px-3 border border-neutral-600 bg-neutral-900 rounded-md shadow-sm text-white focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm transition-colors" />
+                    @error('appointment_time') <span class="text-red-400 text-xs mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="pt-5 flex items-center justify-end space-x-4 border-t border-neutral-700 mt-8 pt-6">
+                    <a href="{{ route('appointments.index') }}" class="bg-transparent border border-gray-600 py-2 px-4 rounded-md shadow-sm text-sm font-medium text-gray-300 hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-900 focus:ring-gray-500 transition-colors">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-neutral-900 bg-amber-500 hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-900 focus:ring-amber-500 transition-colors">
+                        Confirmar Marcação
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
