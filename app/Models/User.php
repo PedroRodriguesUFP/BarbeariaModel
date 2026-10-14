@@ -4,9 +4,11 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class User extends Authenticatable
 {
@@ -15,8 +17,11 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
+        'bio',
         'password',
         'role',
+        'active',
     ];
 
     protected $hidden = [
@@ -24,84 +29,107 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    // Define a conversão dos atributos do utilizador.
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed', // Always store passwords securely as hashes.
+            'password' => 'hashed',
             'role' => UserRole::class,
+            'active' => 'boolean',
         ];
     }
 
-    // Verifica se o utilizador é administrador.
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
     }
 
-    // Verifica se o utilizador é barbeiro.
     public function isBarber(): bool
     {
         return $this->role === UserRole::Barber;
     }
 
-    // Verifica se o utilizador é cliente.
     public function isClient(): bool
     {
         return $this->role === UserRole::Client;
     }
 
-    // Devolve o perfil de cliente.
-    public function client(): HasOne
-    {
-        return $this->hasOne(Client::class);
-    }
-
-    // Devolve o perfil de barbeiro.
-    public function barber(): HasOne
-    {
-        return $this->hasOne(Barber::class);
-    }
-
-    // Verifica se o utilizador tem o papel indicado.
     public function hasRole(UserRole $role): bool
     {
         return $this->role === $role;
     }
 
-    // Verifica se o utilizador está ativo.
     public function isActive(): bool
     {
         return $this->active;
     }
 
-    // Devolve o nome para apresentar.
+    // Marcações feitas por este utilizador
+    public function appointmentsAsCustomer(): HasMany
+    {
+        return $this->hasMany(
+            Appointment::class,
+            'customer_id'
+        );
+    }
+
+    // Marcações em que este utilizador é o barbeiro
+    public function appointmentsAsBarber(): HasMany
+    {
+        return $this->hasMany(
+            Appointment::class,
+            'barber_id'
+        );
+    }
+
+    // Serviços que o utilizador realiza quando é barbeiro
+    public function services(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Service::class,
+            'service_user',
+            'user_id',
+            'service_id'
+        );
+    }
+
     public function getDisplayNameAttribute(): string
     {
         return $this->name;
     }
 
-    // Atualiza o nome do utilizador.
     public function updateName(string $newName): void
     {
         $this->name = $newName;
         $this->save();
     }
 
-    // Atualiza o email do utilizador.
     public function updateEmail(string $newEmail): void
     {
         $this->email = $newEmail;
         $this->save();
     }
 
-    // Atualiza o telefone do utilizador.
     public function updatePhone(string $phoneNumber): void
     {
         $this->phone = $phoneNumber;
         $this->save();
     }
-    // TODO: Add role update support.
+    // Avaliações escritas por este utilizador.
+public function reviewsWritten(): HasMany
+{
+    return $this->hasMany(
+        Review::class,
+        'reviewer_id'
+    );
+}
 
+// Avaliações recebidas quando este utilizador é barbeiro.
+public function reviewsReceived(): MorphMany
+{
+    return $this->morphMany(
+        Review::class,
+        'reviewable'
+    );
+}
 }

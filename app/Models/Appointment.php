@@ -11,12 +11,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Appointment extends Model
 {
     protected $fillable = [
-        'date',
-        'time',
-        'status',
-        'client_id',
-        'service_id',
-        'barber_id',
+    'date',
+    'time',
+    'status',
+    'customer_id',
+    'service_id',
+    'barber_id',
     ];
 
     // Define a conversão dos atributos do modelo.
@@ -29,21 +29,21 @@ class Appointment extends Model
     }
 
     // Devolve o cliente da marcação.
-    public function client(): BelongsTo
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(
-            Client::class,
-            'client_id'
-        );
+    return $this->belongsTo(
+        User::class,
+        'customer_id'
+    );
     }
 
     // Devolve o barbeiro da marcação.
     public function barber(): BelongsTo
     {
-        return $this->belongsTo(
-            Barber::class,
-            'barber_id'
-        );
+    return $this->belongsTo(
+        User::class,
+        'barber_id'
+    );
     }
 
     // Devolve o serviço da marcação.
@@ -63,43 +63,43 @@ class Appointment extends Model
 
     // Cria uma marcação pendente.
     public function makeAppointment(
-        DateTime $date,
-        string $clientId,
-        string $serviceId,
-        string $barberId,
-        ?string $time = null
+    DateTime $date,
+    string $customerId,
+    string $serviceId,
+    string $barberId,
+    ?string $time = null
     ): void {
-        $this->date = $date;
-        $this->status = Status::Pending;
-        $this->client_id = $clientId;
-        $this->service_id = $serviceId;
-        $this->barber_id = $barberId;
+    $this->date = $date;
+    $this->status = Status::Pending;
+    $this->customer_id = $customerId;
+    $this->service_id = $serviceId;
+    $this->barber_id = $barberId;
 
-        if ($time !== null) {
-            $this->time = $time;
-        }
+    if ($time !== null) {
+        $this->time = $time;
+    }
 
-        $this->save();
+    $this->save();
     }
 
     // Atualiza os dados da marcação.
     public function updateAppointment(
-        DateTime $newDate,
-        string $newClientId,
-        string $newServiceId,
-        string $newBarberId,
-        ?string $newTime = null
+    DateTime $newDate,
+    string $newCustomerId,
+    string $newServiceId,
+    string $newBarberId,
+    ?string $newTime = null
     ): void {
-        $this->date = $newDate;
-        $this->client_id = $newClientId;
-        $this->service_id = $newServiceId;
-        $this->barber_id = $newBarberId;
+    $this->date = $newDate;
+    $this->customer_id = $newCustomerId;
+    $this->service_id = $newServiceId;
+    $this->barber_id = $newBarberId;
 
-        if ($newTime !== null) {
-            $this->time = $newTime;
-        }
+    if ($newTime !== null) {
+        $this->time = $newTime;
+    }
 
-        $this->save();
+    $this->save();
     }
 
     // Altera o estado da marcação.

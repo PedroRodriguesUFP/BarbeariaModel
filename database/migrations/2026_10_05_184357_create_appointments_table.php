@@ -11,16 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('appointments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('client_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('barber_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('service_id')->constrained()->cascadeOnDelete();
-            $table->date('date');
-            $table->time('time')->nullable();
-            $table->string('status')->default('pending');
-            $table->timestamps();
-        });
+    Schema::create('appointments', function (Blueprint $table) {
+    $table->id();
+
+    $table->foreignId('customer_id')
+        ->constrained('users')
+        ->cascadeOnDelete();
+
+    $table->foreignId('barber_id')
+        ->constrained('users')
+        ->cascadeOnDelete();
+
+    $table->foreignId('service_id')
+        ->constrained()
+        ->cascadeOnDelete();
+
+    $table->date('date');
+    $table->time('time')->nullable();
+    $table->string('status')->default('pending');
+
+    $table->timestamps();
+    });
     }
 
     /**

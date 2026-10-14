@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use App\Enums\Category;
+use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Service extends Model
 {
@@ -17,7 +18,6 @@ class Service extends Model
         'category',
     ];
 
-    // Define a conversão dos atributos do modelo.
     protected function casts(): array
     {
         return [
@@ -25,7 +25,7 @@ class Service extends Model
         ];
     }
 
-    // Devolve as avaliações do serviço.
+    // Avaliações feitas ao serviço.
     public function reviews(): MorphMany
     {
         return $this->morphMany(
@@ -34,45 +34,41 @@ class Service extends Model
         );
     }
 
-    // Atualiza o preço do serviço.
+    // Barbeiros que realizam este serviço.
+    public function barbers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'service_user',
+            'service_id',
+            'user_id'
+        )->where(
+            'users.role',
+            UserRole::Barber->value
+        );
+    }
+
     public function updatePrice(float $newPrice): void
     {
         $this->price = $newPrice;
-
         $this->save();
     }
 
-    // Atualiza o nome do serviço.
     public function updateName(string $newName): void
     {
         $this->name = $newName;
-
         $this->save();
     }
 
-    // Atualiza a duração do serviço.
     public function updateDuration(int $newDuration): void
     {
         $this->duration_minutes = $newDuration;
-
         $this->save();
     }
 
-    // Atualiza a descrição do serviço.
     public function updateDescription(string $newDescription): void
     {
         $this->description = $newDescription;
-
         $this->save();
     }
-    // Devolve os barbeiros que prestam o serviço.
-    public function barbers(): BelongsToMany
-{
-    return $this->belongsToMany(
-        Barber::class,
-        'barber_service',
-        'service_id',
-        'barber_id'
-    );
-}
 }

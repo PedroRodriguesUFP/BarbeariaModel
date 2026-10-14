@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AppointmentController extends Controller
 {
@@ -11,15 +13,15 @@ class AppointmentController extends Controller
     public function index()
     {
         $appointments = Appointment::with([
-            'client.user',
-            'barber.user',
+            'customer',
+            'barber',
             'service',
         ])->get();
 
         return view('appointments.index', compact('appointments'));
     }
 
-    // Apresenta o formulário de marcação.
+    // Apresenta o formulário de criação.
     public function create()
     {
         return view('appointments.create');
@@ -28,19 +30,33 @@ class AppointmentController extends Controller
     // Valida e guarda uma nova marcação.
     public function store(Request $request)
     {
-        // valida se o formulário é válido
         $request->validate([
             'date' => 'required|date',
             'time' => 'required|date_format:H:i',
-            'client_id' => 'required|exists:clients,id',
-            'service_id' => 'required|exists:services,id',
-            'barber_id' => 'required|exists:barbers,id',
+
+            'customer_id' => [
+                'required',
+                'exists:users,id',
+            ],
+
+            'barber_id' => [
+                'required',
+                Rule::exists('users', 'id')->where(
+                    'role',
+                    UserRole::Barber->value
+                ),
+            ],
+
+            'service_id' => [
+                'required',
+                'exists:services,id',
+            ],
         ]);
 
         Appointment::create([
             'date' => $request->input('date'),
             'time' => $request->input('time'),
-            'client_id' => $request->input('client_id'),
+            'customer_id' => $request->input('customer_id'),
             'service_id' => $request->input('service_id'),
             'barber_id' => $request->input('barber_id'),
         ]);
@@ -50,85 +66,82 @@ class AppointmentController extends Controller
             ->with('success', 'Appointment created successfully.');
     }
 
-    // Apresenta uma marcação específica.
+    // Mostra uma marcação.
     public function show($id)
     {
         $appointment = Appointment::with([
-            'client.user',
-            'barber.user',
+            'customer',
+            'barber',
             'service',
-        ])->find($id);
+        ])->findOrFail($id);
 
-        if (! $appointment) {
-            throw new \Exception(
-                'Appointment not found, please check if the Appointment exists and try again.'
-            );
-        }
-
-        return view('appointments.show', compact('appointment'));
+        return view(
+            'appointments.show',
+            compact('appointment')
+        );
     }
 
-    // Apresenta o formulário de edição.
+    // Formulário de edição.
     public function edit($id)
     {
-        $appointment = Appointment::find($id);
+        $appointment = Appointment::findOrFail($id);
 
-        if (! $appointment) {
-            throw new \Exception(
-                'Appointment not found, please check if the Appointment exists and try again.'
-            );
-        }
-
-        return view('appointments.edit', compact('appointment'));
+        return view(
+            'appointments.edit',
+            compact('appointment')
+        );
     }
 
-    // Valida e atualiza uma marcação.
+    // Atualiza uma marcação.
     public function update(Request $request, $id)
     {
         $request->validate([
             'date' => 'required|date',
             'time' => 'required|date_format:H:i',
-            'client_id' => 'required|exists:clients,id',
-            'service_id' => 'required|exists:services,id',
-            'barber_id' => 'required|exists:barbers,id',
+
+            'customer_id' => [
+                'required',
+                'exists:users,id',
+            ],
+
+            'barber_id' => [
+                'required',
+                Rule::exists('users', 'id')->where(
+                    'role',
+                    UserRole::Barber->value
+                ),
+            ],
+
+            'service_id' => [
+                'required',
+                'exists:services,id',
+            ],
         ]);
 
-        $appointment = Appointment::find($id);
+        $appointment = Appointment::findOrFail($id);
 
-        if ($appointment) {
-            $appointment->update([
-                'date' => $request->input('date'),
-                'time' => $request->input('time'),
-                'client_id' => $request->input('client_id'),
-                'service_id' => $request->input('service_id'),
-                'barber_id' => $request->input('barber_id'),
-            ]);
+        $appointment->update([
+            'date' => $request->input('date'),
+            'time' => $request->input('time'),
+            'customer_id' => $request->input('customer_id'),
+            'service_id' => $request->input('service_id'),
+            'barber_id' => $request->input('barber_id'),
+        ]);
 
-            return redirect()
-                ->route('appointments.index')
-                ->with('success', 'Appointment updated successfully.');
-        } else {
-            throw new \Exception(
-                'Appointment not found, please check if the Appointment exists and try again.'
-            );
-        }
+        return redirect()
+            ->route('appointments.index')
+            ->with('success', 'Appointment updated successfully.');
     }
 
-    // Apaga uma marcação.
+    // Elimina uma marcação.
     public function destroy($id)
     {
-        $appointment = Appointment::find($id);
+        $appointment = Appointment::findOrFail($id);
 
-        if ($appointment) {
-            $appointment->delete();
+        $appointment->delete();
 
-            return redirect()
-                ->route('appointments.index')
-                ->with('success', 'Appointment deleted successfully.');
-        } else {
-            throw new \Exception(
-                'Appointment not found, please check if the Appointment exists and try again.'
-            );
-        }
+        return redirect()
+            ->route('appointments.index')
+            ->with('success', 'Appointment deleted successfully.');
     }
 }

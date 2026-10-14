@@ -11,17 +11,29 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payments', function (Blueprint $table) {
+    Schema::create('payments', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('appointment_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('client_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('barber_id')->nullable()->constrained()->nullOnDelete();
+
+    $table->foreignId('appointment_id')
+        ->constrained()
+        ->cascadeOnDelete();
+
+    $table->foreignId('payer_id')
+        ->constrained('users')
+        ->cascadeOnDelete();
+
     $table->decimal('amount', 8, 2);
-    $table->string('method');              
-    $table->string('status')->default('pending');
-    $table->timestamp('paid_at')->nullable();
+
+    $table->string('method');
+
+    $table->string('status')
+        ->default('pending');
+
+    $table->timestamp('paid_at')
+        ->nullable();
+
     $table->timestamps();
-     });
+});
     }
 
     /**

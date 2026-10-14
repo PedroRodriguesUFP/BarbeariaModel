@@ -9,8 +9,7 @@ use LogicException;
 class Payment extends Model
 {
     protected $fillable = [
-        'client_id',
-        'barber_id',
+        'payer_id',
         'appointment_id',
         'amount',
         'method',
@@ -18,7 +17,6 @@ class Payment extends Model
         'paid_at',
     ];
 
-    // Define a conversão dos atributos do modelo.
     protected function casts(): array
     {
         return [
@@ -27,49 +25,43 @@ class Payment extends Model
         ];
     }
 
-    // Devolve o cliente associado ao pagamento.
-    public function client(): BelongsTo
+    // Utilizador que realizou o pagamento.
+    public function payer(): BelongsTo
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(
+            User::class,
+            'payer_id'
+        );
     }
 
-    // Devolve o barbeiro associado ao pagamento.
-    public function barber(): BelongsTo
-    {
-        return $this->belongsTo(Barber::class);
-    }
-
-    // Devolve a marcação associada ao pagamento.
+    // Marcação associada ao pagamento.
     public function appointment(): BelongsTo
     {
-        return $this->belongsTo(Appointment::class);
+        return $this->belongsTo(
+            Appointment::class
+        );
     }
 
-    // Verifica se o pagamento está pendente.
     public function isPending(): bool
     {
         return $this->status === 'pending';
     }
 
-    // Verifica se o pagamento foi realizado.
     public function isPaid(): bool
     {
         return $this->status === 'paid';
     }
 
-    // Verifica se o pagamento falhou.
     public function isFailed(): bool
     {
         return $this->status === 'failed';
     }
 
-    // Verifica se o pagamento foi reembolsado.
     public function isRefunded(): bool
     {
         return $this->status === 'refunded';
     }
 
-    // Regista o pagamento como realizado.
     public function markAsPaid(): void
     {
         $this->status = 'paid';
@@ -78,7 +70,6 @@ class Payment extends Model
         $this->save();
     }
 
-    // Regista o pagamento como falhado.
     public function markAsFailed(): void
     {
         $this->status = 'failed';
@@ -86,13 +77,11 @@ class Payment extends Model
         $this->save();
     }
 
-    // Verifica se o pagamento pode ser reembolsado.
     public function canBeRefunded(): bool
     {
         return $this->isPaid();
     }
 
-    // Regista o pagamento como reembolsado.
     public function markAsRefunded(): void
     {
         if (! $this->canBeRefunded()) {
@@ -106,7 +95,6 @@ class Payment extends Model
         $this->save();
     }
 
-    // Formata o valor do pagamento em euros.
     public function getFormattedAmount(): string
     {
         return number_format(
