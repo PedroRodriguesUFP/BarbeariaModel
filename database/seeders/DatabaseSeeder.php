@@ -8,13 +8,14 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-       $this->call([
+    $this->call([
     ServiceSeeder::class,
     UserSeeder::class,
     BarberSeeder::class,
+    WorkingHourSeeder::class,
     AppointmentSeeder::class,
     ReviewSeeder::class,
     PaymentSeeder::class,
-     ]);
+    ]);
     }
 }

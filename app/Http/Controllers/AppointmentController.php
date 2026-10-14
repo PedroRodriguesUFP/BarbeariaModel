@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
 use App\Models\Appointment;
+use App\Models\Service;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class AppointmentController extends Controller
 {
@@ -18,7 +21,10 @@ class AppointmentController extends Controller
             'service',
         ])->get();
 
-        return view('appointments.index', compact('appointments'));
+        return view(
+            'appointments.index',
+            compact('appointments')
+        );
     }
 
     // Apresenta o formulário de criação.
@@ -27,12 +33,20 @@ class AppointmentController extends Controller
         return view('appointments.create');
     }
 
-    // Valida e guarda uma nova marcação.
+    // Cria uma nova marcação.
     public function store(Request $request)
     {
         $request->validate([
-            'date' => 'required|date',
-            'time' => 'required|date_format:H:i',
+            'date' => [
+                'required',
+                'date',
+                'after_or_equal:today',
+            ],
+
+            'time' => [
+                'required',
+                'date_format:H:i',
+            ],
 
             'customer_id' => [
                 'required',
@@ -53,17 +67,48 @@ class AppointmentController extends Controller
             ],
         ]);
 
+        $barber = User::findOrFail(
+            $request->input('barber_id')
+        );
+
+        $service = Service::findOrFail(
+            $request->input('service_id')
+        );
+
+        /*
+         * Verifica:
+         *
+         * - se é barbeiro;
+         * - se realiza o serviço;
+         * - se trabalha nesse horário;
+         * - se existem bloqueios;
+         * - se já tem outra marcação.
+         */
+        if (! $barber->isAvailableFor(
+            $service,
+            $request->input('date'),
+            $request->input('time')
+        )) {
+            throw ValidationException::withMessages([
+                'time' =>
+                    'O barbeiro não está disponível neste horário para este serviço.',
+            ]);
+        }
+
         Appointment::create([
             'date' => $request->input('date'),
             'time' => $request->input('time'),
             'customer_id' => $request->input('customer_id'),
-            'service_id' => $request->input('service_id'),
-            'barber_id' => $request->input('barber_id'),
+            'service_id' => $service->id,
+            'barber_id' => $barber->id,
         ]);
 
         return redirect()
             ->route('appointments.index')
-            ->with('success', 'Appointment created successfully.');
+            ->with(
+                'success',
+                'Marcação criada com sucesso.'
+            );
     }
 
     // Mostra uma marcação.
@@ -96,8 +141,16 @@ class AppointmentController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'date' => 'required|date',
-            'time' => 'required|date_format:H:i',
+            'date' => [
+                'required',
+                'date',
+                'after_or_equal:today',
+            ],
+
+            'time' => [
+                'required',
+                'date_format:H:i',
+            ],
 
             'customer_id' => [
                 'required',
@@ -120,17 +173,44 @@ class AppointmentController extends Controller
 
         $appointment = Appointment::findOrFail($id);
 
+        $barber = User::findOrFail(
+            $request->input('barber_id')
+        );
+
+        $service = Service::findOrFail(
+            $request->input('service_id')
+        );
+
+        /*
+         * Passamos o ID da própria marcação para ela
+         * não entrar em conflito consigo mesma.
+         */
+        if (! $barber->isAvailableFor(
+            $service,
+            $request->input('date'),
+            $request->input('time'),
+            $appointment->id
+        )) {
+            throw ValidationException::withMessages([
+                'time' =>
+                    'O barbeiro não está disponível neste horário para este serviço.',
+            ]);
+        }
+
         $appointment->update([
             'date' => $request->input('date'),
             'time' => $request->input('time'),
             'customer_id' => $request->input('customer_id'),
-            'service_id' => $request->input('service_id'),
-            'barber_id' => $request->input('barber_id'),
+            'service_id' => $service->id,
+            'barber_id' => $barber->id,
         ]);
 
         return redirect()
             ->route('appointments.index')
-            ->with('success', 'Appointment updated successfully.');
+            ->with(
+                'success',
+                'Marcação atualizada com sucesso.'
+            );
     }
 
     // Elimina uma marcação.
@@ -142,6 +222,9 @@ class AppointmentController extends Controller
 
         return redirect()
             ->route('appointments.index')
-            ->with('success', 'Appointment deleted successfully.');
+            ->with(
+                'success',
+                'Marcação eliminada com sucesso.'
+            );
     }
 }
