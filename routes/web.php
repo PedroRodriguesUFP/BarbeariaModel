@@ -4,11 +4,15 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceController;
+use App\Models\Service;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
-});
+    // Mostra até 5 serviços na página de boas-vindas.
+    $services = Service::orderBy('price')->take(5)->get();
+
+    return view('welcome', compact('services'));
+})->name('home');
 
 Route::resource(
     'appointments',
