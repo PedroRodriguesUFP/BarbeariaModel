@@ -15,7 +15,7 @@ return new class extends Migration
     $table->id();
     $table->string('name');
     $table->text('description')->nullable();
-    $table->decimal('price', 8, 2);
+    $table->decimal('price', 8, 2); // preço do serviço com 8 dígitos no total e 2 casas decimais
     $table->integer('duration_minutes');
     $table->string('category');
     $table->boolean('is_active')->default(true);
