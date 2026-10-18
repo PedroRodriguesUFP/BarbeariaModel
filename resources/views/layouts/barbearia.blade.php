@@ -20,6 +20,18 @@
                 <a href="{{ route('payments.index') }}" @if (request()->routeIs('payments.*')) aria-current="page" @endif>Pagamentos</a>
                 <a href="{{ route('reviews.index') }}" @if (request()->routeIs('reviews.*')) aria-current="page" @endif>Avaliações</a>
             </nav>
+
+            <div class="account">
+                @auth
+                    <span class="who">{{ auth()->user()->name }}</span>
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button class="link" type="submit">Sair</button>
+                    </form>
+                @else
+                    <a class="btn small ghost" href="{{ route('login') }}">Entrar</a>
+                @endauth
+            </div>
         </header>
     </div>
 
@@ -33,6 +45,10 @@
             <a href="{{ route('appointments.create') }}">Marcar horário</a>
         </div>
     </footer>
+
+    @unless (request()->routeIs('appointments.create', 'login'))
+        <a class="btn sticky-cta" href="{{ route('appointments.create') }}">Marcar horário</a>
+    @endunless
 
     <script src="{{ asset('js/barbearia.js') }}" defer></script>
 </body>

@@ -21,7 +21,9 @@
             <p class="sub">{{ $categorias[$categoria] ?? $categoria }}</p>
         </div>
         <div class="actions">
-            <a class="btn" href="{{ route('services.edit', $service) }}">Editar</a>
+            @if (auth()->user()?->isAdmin())
+                <a class="btn" href="{{ route('services.edit', $service) }}">Editar</a>
+            @endif
             <a class="btn ghost" href="{{ route('services.index') }}">Voltar</a>
         </div>
     </header>

@@ -31,7 +31,9 @@
         @if ($services->isEmpty())
             <p class="empty">
                 Ainda não há serviços disponíveis.
-                <a href="{{ route('services.create') }}">Adicionar o primeiro serviço</a>
+                @if (auth()->user()?->isAdmin())
+                    <a href="{{ route('services.create') }}">Adicionar o primeiro serviço</a>
+                @endif
             </p>
         @else
             <ul class="menu">
