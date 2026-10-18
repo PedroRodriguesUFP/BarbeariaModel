@@ -30,6 +30,8 @@
                 var y = (event.clientY - box.top) / box.height - 0.5;
 
                 el.classList.add('is-tilting');
+                el.style.setProperty('--mx', ((x + 0.5) * 100).toFixed(0) + '%');
+                el.style.setProperty('--my', ((y + 0.5) * 100).toFixed(0) + '%');
                 el.style.setProperty('--rx', (-y * max).toFixed(2) + 'deg');
                 el.style.setProperty('--ry', (x * max).toFixed(2) + 'deg');
             });

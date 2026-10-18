@@ -19,7 +19,9 @@
             <h1>Serviços</h1>
             <p class="sub">Preço e duração de cada serviço.</p>
         </div>
-        <a class="btn" href="{{ route('services.create') }}">Novo serviço</a>
+        @if (auth()->user()?->isAdmin())
+            <a class="btn" href="{{ route('services.create') }}">Novo serviço</a>
+        @endif
     </header>
 
     <div class="page-body">
@@ -28,7 +30,9 @@
         @if ($services->isEmpty())
             <p class="empty">
                 Ainda não existem serviços.
-                <a href="{{ route('services.create') }}">Adicionar o primeiro serviço</a>
+                @if (auth()->user()?->isAdmin())
+                    <a href="{{ route('services.create') }}">Adicionar o primeiro serviço</a>
+                @endif
             </p>
         @else
             <div class="cards">
@@ -42,16 +46,18 @@
 
                         <div class="row-actions lift">
                             <a class="link" href="{{ route('services.show', $service) }}">Ver</a>
-                            <a class="link" href="{{ route('services.edit', $service) }}">Editar</a>
-                            <form
-                                action="{{ route('services.destroy', $service) }}"
-                                method="POST"
-                                onsubmit="return confirm('Eliminar este serviço?')"
-                            >
-                                @csrf
-                                @method('DELETE')
-                                <button class="link danger" type="submit">Eliminar</button>
-                            </form>
+                            @if (auth()->user()?->isAdmin())
+                                <a class="link" href="{{ route('services.edit', $service) }}">Editar</a>
+                                <form
+                                    action="{{ route('services.destroy', $service) }}"
+                                    method="POST"
+                                    onsubmit="return confirm('Eliminar este serviço?')"
+                                >
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="link danger" type="submit">Eliminar</button>
+                                </form>
+                            @endif
                         </div>
                     </article>
                 @endforeach
