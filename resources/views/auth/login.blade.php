@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.barbearia')
 
 @section('content')
 <div class="max-w-md mx-auto py-12 px-4">

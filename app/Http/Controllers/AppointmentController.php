@@ -46,12 +46,7 @@ class AppointmentController extends Controller
             'time' => [
                 'required',
                 'date_format:H:i',
-            ],
-
-            'customer_id' => [
-                'required',
-                'exists:users,id',
-            ],
+            ],  
 
             'barber_id' => [
                 'required',
@@ -95,10 +90,10 @@ class AppointmentController extends Controller
             ]);
         }
 
-        Appointment::create([
+                Appointment::create([
             'date' => $request->input('date'),
             'time' => $request->input('time'),
-            'customer_id' => $request->input('customer_id'),
+            'customer_id' => $request->user()->id,
             'service_id' => $service->id,
             'barber_id' => $barber->id,
         ]);
@@ -152,11 +147,6 @@ class AppointmentController extends Controller
                 'date_format:H:i',
             ],
 
-            'customer_id' => [
-                'required',
-                'exists:users,id',
-            ],
-
             'barber_id' => [
                 'required',
                 Rule::exists('users', 'id')->where(
@@ -197,10 +187,9 @@ class AppointmentController extends Controller
             ]);
         }
 
-        $appointment->update([
+                $appointment->update([
             'date' => $request->input('date'),
             'time' => $request->input('time'),
-            'customer_id' => $request->input('customer_id'),
             'service_id' => $service->id,
             'barber_id' => $barber->id,
         ]);

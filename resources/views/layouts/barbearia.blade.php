@@ -14,11 +14,22 @@
     <div class="wrap">
         <header class="topbar">
             <a class="brand" href="{{ url('/') }}">{{ config('app.name', 'Barbearia') }}</a>
-            <nav aria-label="Principal">
+                       <nav aria-label="Principal">
                 <a href="{{ route('services.index') }}" @if (request()->routeIs('services.*')) aria-current="page" @endif>Serviços</a>
                 <a href="{{ route('appointments.index') }}" @if (request()->routeIs('appointments.*')) aria-current="page" @endif>Marcações</a>
                 <a href="{{ route('payments.index') }}" @if (request()->routeIs('payments.*')) aria-current="page" @endif>Pagamentos</a>
                 <a href="{{ route('reviews.index') }}" @if (request()->routeIs('reviews.*')) aria-current="page" @endif>Avaliações</a>
+
+                @auth
+                    <span>Olá, {{ auth()->user()->name }}</span>
+
+                    <form action="{{ route('logout') }}" method="POST" style="display:inline">
+                        @csrf
+                        <button type="submit">Logout</button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" @if (request()->routeIs('login')) aria-current="page" @endif>Login</a>
+                @endauth
             </nav>
         </header>
     </div>
