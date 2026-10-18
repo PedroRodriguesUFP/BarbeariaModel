@@ -95,22 +95,22 @@ Route::middleware('auth')->group(function () {
     )->name('checkout');
 
     // ======================================================
-// CALENDÁRIO DO BARBEIRO
-// ======================================================
+    // CALENDÁRIO DO BARBEIRO
+    // ======================================================
 
-Route::middleware(['auth', 'role:barber'])->group(function () {
+    Route::middleware(['auth', 'role:barber'])->group(function () {
 
     Route::get('/calendar', [CalendarController::class, 'mine'])->name('calendar.mine');
     Route::get('/calendar/appointments/create', [CalendarController::class, 'create'])->name('calendar.appointments.create');
     Route::post('/calendar/appointments', [CalendarController::class, 'store'])->name('calendar.appointments.store');
 
-});
+    });
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::get('/barbers', [CalendarController::class, 'barbers'])->name('barbers.index');
     Route::get('/barbers/{barber}/calendar', [CalendarController::class, 'show'])->name('barbers.calendar');
 
-});
+    });
 
 });
