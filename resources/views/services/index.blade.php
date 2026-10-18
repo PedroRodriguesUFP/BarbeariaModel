@@ -1,64 +1,62 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <title>Services</title>
-</head>
-<body>
+@extends('layouts.barbearia')
 
-    <h1>Services</h1>
+@section('title', 'Serviços')
 
-    <a href="{{ route('services.create') }}">Create Service</a>
+@php
+    $categorias = [
+        'hair' => 'Cabelo',
+        'beard' => 'Barba',
+        'hair and beard' => 'Cabelo e barba',
+        'fade' => 'Fade',
+        'coloring' => 'Coloração',
+    ];
+@endphp
 
-    @if (session('success'))
-        <p>{{ session('success') }}</p>
-    @endif
+@section('content')
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>Serviços</h1>
+            <p class="sub">Preço e duração de cada serviço.</p>
+        </div>
+        <a class="btn" href="{{ route('services.create') }}">Novo serviço</a>
+    </header>
 
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Price</th>
-                <th>Duration</th>
-                <th>Category</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
+    <div class="page-body">
+        @include('partials.messages')
 
-        <tbody>
-            @foreach ($services as $service)
-                <tr>
-                    <td>{{ $service->name }}</td>
-                    <td>{{ $service->price }} €</td>
-                    <td>{{ $service->duration_minutes }} min</td>
-                    <td>{{ $service->category->value }}</td>
+        @if ($services->isEmpty())
+            <p class="empty">
+                Ainda não existem serviços.
+                <a href="{{ route('services.create') }}">Adicionar o primeiro serviço</a>
+            </p>
+        @else
+            <div class="cards">
+                @foreach ($services as $service)
+                    @php($categoria = $service->category->value)
+                    <article class="card" data-tilt>
+                        <span class="tag lift">{{ $categorias[$categoria] ?? $categoria }}</span>
+                        <h2 class="lift">{{ $service->name }}</h2>
+                        <span class="price lift-far">{{ number_format($service->price, 2, ',', ' ') }} €</span>
+                        <span class="meta lift">{{ $service->duration_minutes }} min</span>
 
-                    <td>
-                        <a href="{{ route('services.show', $service) }}">
-                            View
-                        </a>
-
-                        <a href="{{ route('services.edit', $service) }}">
-                            Edit
-                        </a>
-
-                        <form
-                            action="{{ route('services.destroy', $service) }}"
-                            method="POST"
-                            style="display:inline;"
-                        >
-                            @csrf
-                            @method('DELETE')
-
-                            <button type="submit">
-                                Delete
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-</body>
-</html>
+                        <div class="row-actions lift">
+                            <a class="link" href="{{ route('services.show', $service) }}">Ver</a>
+                            <a class="link" href="{{ route('services.edit', $service) }}">Editar</a>
+                            <form
+                                action="{{ route('services.destroy', $service) }}"
+                                method="POST"
+                                onsubmit="return confirm('Eliminar este serviço?')"
+                            >
+                                @csrf
+                                @method('DELETE')
+                                <button class="link danger" type="submit">Eliminar</button>
+                            </form>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        @endif
+    </div>
+</div>
+@endsection

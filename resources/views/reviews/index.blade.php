@@ -1,145 +1,59 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avaliações</title>
-</head>
+@extends('layouts.barbearia')
 
-<body class="bg-gray-50 text-gray-900">
+@section('title', 'Avaliações')
 
-<main class="mx-auto max-w-6xl px-4 py-10">
-
-    <header class="mb-6 flex items-center justify-between gap-4">
-
-        <h1 class="text-2xl font-bold">
-            Avaliações
-        </h1>
-
-        <a
-            class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-            href="{{ route('reviews.create') }}"
-        >
-            Nova avaliação
-        </a>
-
+@section('content')
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>Avaliações</h1>
+            <p class="sub">O que os clientes dizem dos barbeiros e dos serviços.</p>
+        </div>
+        <a class="btn" href="{{ route('reviews.create') }}">Nova avaliação</a>
     </header>
 
-    @if (session('success'))
-        <p class="mb-4 rounded border border-green-200 bg-green-50 p-3 text-green-800">
-            {{ session('success') }}
-        </p>
-    @endif
+    <div class="page-body">
+        @include('partials.messages')
 
-    <div class="overflow-x-auto rounded border border-gray-200 bg-white">
+        @if ($reviews->isEmpty())
+            <p class="empty">
+                Ainda não existem avaliações.
+                <a href="{{ route('reviews.create') }}">Escrever a primeira avaliação</a>
+            </p>
+        @else
+            <div class="cards">
+                @foreach ($reviews as $review)
+                    <article class="card" data-tilt>
+                        <span class="stars lift-far" role="img" aria-label="{{ $review->rating }} de 5">
+                            {{ str_repeat('★', (int) $review->rating) }}<span class="off">{{ str_repeat('★', max(0, 5 - (int) $review->rating)) }}</span>
+                        </span>
 
-        <table class="w-full border-collapse text-left text-sm">
+                        <p class="quote lift">{{ $review->comment ?: 'Sem comentário.' }}</p>
 
-            <thead class="bg-gray-100 text-gray-700">
-                <tr>
-                    <th class="p-3">Utilizador</th>
-                    <th class="p-3">Avaliação sobre</th>
-                    <th class="p-3">Classificação</th>
-                    <th class="p-3">Comentário</th>
-                    <th class="p-3">Ações</th>
-                </tr>
-            </thead>
-
-            <tbody class="divide-y divide-gray-200">
-
-                @forelse ($reviews as $review)
-
-                    <tr>
-
-                        <td class="p-3">
+                        <span class="meta lift">
                             {{ $review->reviewer?->name ?? '-' }}
-                        </td>
+                            &middot;
+                            {{ $review->isAboutBarber() ? 'Barbeiro' : 'Serviço' }}:
+                            {{ $review->reviewable?->name ?? '-' }}
+                        </span>
 
-                        <td class="p-3">
-
-                            @if ($review->isAboutBarber())
-
-                                Barbeiro:
-                                {{ $review->reviewable?->name ?? '-' }}
-
-                            @else
-
-                                Serviço:
-                                {{ $review->reviewable?->name ?? '-' }}
-
-                            @endif
-
-                        </td>
-
-                        <td class="p-3">
-                            {{ $review->rating }}/5
-                        </td>
-
-                        <td class="p-3">
-                            {{ $review->comment ?? '-' }}
-                        </td>
-
-                        <td class="p-3">
-
-                            <div class="flex gap-3">
-
-                                <a
-                                    class="text-blue-700 hover:underline"
-                                    href="{{ route('reviews.show', $review) }}"
-                                >
-                                    Ver
-                                </a>
-
-                                <a
-                                    class="text-blue-700 hover:underline"
-                                    href="{{ route('reviews.edit', $review) }}"
-                                >
-                                    Editar
-                                </a>
-
-                                <form
-                                    action="{{ route('reviews.destroy', $review) }}"
-                                    method="POST"
-                                    onsubmit="return confirm('Eliminar esta avaliação?')"
-                                >
-                                    @csrf
-                                    @method('DELETE')
-
-                                    <button
-                                        class="text-red-700 hover:underline"
-                                        type="submit"
-                                    >
-                                        Eliminar
-                                    </button>
-
-                                </form>
-
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-                @empty
-
-                    <tr>
-                        <td
-                            class="p-4 text-center text-gray-500"
-                            colspan="5"
-                        >
-                            Ainda não existem avaliações.
-                        </td>
-                    </tr>
-
-                @endforelse
-
-            </tbody>
-
-        </table>
-
+                        <div class="row-actions lift">
+                            <a class="link" href="{{ route('reviews.show', $review) }}">Ver</a>
+                            <a class="link" href="{{ route('reviews.edit', $review) }}">Editar</a>
+                            <form
+                                action="{{ route('reviews.destroy', $review) }}"
+                                method="POST"
+                                onsubmit="return confirm('Eliminar esta avaliação?')"
+                            >
+                                @csrf
+                                @method('DELETE')
+                                <button class="link danger" type="submit">Eliminar</button>
+                            </form>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        @endif
     </div>
-
-</main>
-
-</body>
-</html>
+</div>
+@endsection

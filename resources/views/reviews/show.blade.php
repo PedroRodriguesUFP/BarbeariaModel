@@ -1,80 +1,44 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalhes da avaliação</title>
-</head>
+@extends('layouts.barbearia')
 
-<body class="bg-gray-50 text-gray-900">
+@section('title', 'Avaliação #' . $review->id)
 
-<main class="mx-auto max-w-2xl px-4 py-10">
-
-    <h1 class="mb-6 text-2xl font-bold">
-        Detalhes da avaliação #{{ $review->id }}
-    </h1>
-
-    <dl class="space-y-3 rounded border border-gray-200 bg-white p-6">
-
+@section('content')
+<div class="wrap">
+    <header class="page-head">
         <div>
-            <dt class="font-semibold">Utilizador</dt>
-
-            <dd>
-                {{ $review->reviewer?->name ?? '-' }}
-            </dd>
+            <h1>Avaliação #{{ $review->id }}</h1>
+            <p class="sub">{{ $review->reviewer?->name ?? '-' }}</p>
         </div>
-
-        <div>
-            <dt class="font-semibold">Avaliação sobre</dt>
-
-            <dd>
-                @if ($review->isAboutBarber())
-                    Barbeiro:
-                    {{ $review->reviewable?->name ?? '-' }}
-                @else
-                    Serviço:
-                    {{ $review->reviewable?->name ?? '-' }}
-                @endif
-            </dd>
+        <div class="actions">
+            <a class="btn" href="{{ route('reviews.edit', $review) }}">Editar</a>
+            <a class="btn ghost" href="{{ route('reviews.index') }}">Voltar</a>
         </div>
+    </header>
 
-        <div>
-            <dt class="font-semibold">Classificação</dt>
-
-            <dd>
-                {{ $review->rating }}/5
-            </dd>
+    <div class="page-body narrow">
+        <div class="detail" data-tilt>
+            <dl>
+                <div class="row">
+                    <dt>Classificação</dt>
+                    <dd class="big lift-far">{{ $review->rating }}/5</dd>
+                </div>
+                <div class="row">
+                    <dt>Avaliação sobre</dt>
+                    <dd class="lift">
+                        {{ $review->isAboutBarber() ? 'Barbeiro' : 'Serviço' }}:
+                        {{ $review->reviewable?->name ?? '-' }}
+                    </dd>
+                </div>
+                <div class="row">
+                    <dt>Utilizador</dt>
+                    <dd class="lift">{{ $review->reviewer?->name ?? '-' }}</dd>
+                </div>
+                <div class="row">
+                    <dt>Comentário</dt>
+                    <dd class="plain lift">{{ $review->comment ?: '-' }}</dd>
+                </div>
+            </dl>
         </div>
-
-        <div>
-            <dt class="font-semibold">Comentário</dt>
-
-            <dd>
-                {{ $review->comment ?? '-' }}
-            </dd>
-        </div>
-
-    </dl>
-
-    <div class="mt-6 flex gap-3">
-
-        <a
-            class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-            href="{{ route('reviews.edit', $review) }}"
-        >
-            Editar
-        </a>
-
-        <a
-            class="rounded border border-gray-300 px-4 py-2 hover:bg-gray-100"
-            href="{{ route('reviews.index') }}"
-        >
-            Voltar
-        </a>
-
     </div>
-
-</main>
-
-</body>
-</html>
+</div>
+@endsection

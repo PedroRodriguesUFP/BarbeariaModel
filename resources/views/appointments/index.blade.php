@@ -1,141 +1,78 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agendamentos</title>
-</head>
+@extends('layouts.barbearia')
 
-<body class="bg-gray-50 text-gray-900">
+@section('title', 'Marcações')
 
-<main class="mx-auto max-w-6xl px-4 py-10">
-
-    <header class="mb-6 flex items-center justify-between gap-4">
-
-        <h1 class="text-2xl font-bold">
-            Agendamentos
-        </h1>
-
-        <a
-            class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-            href="{{ route('appointments.create') }}"
-        >
-            Novo agendamento
-        </a>
-
+@section('content')
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>Marcações</h1>
+            <p class="sub">Quem vem, com que barbeiro e a que horas.</p>
+        </div>
+        <a class="btn" href="{{ route('appointments.create') }}">Nova marcação</a>
     </header>
 
-    @if (session('success'))
-        <p class="mb-4 rounded border border-green-200 bg-green-50 p-3 text-green-800">
-            {{ session('success') }}
-        </p>
-    @endif
+    <div class="page-body">
+        @include('partials.messages')
 
-    <div class="overflow-x-auto rounded border border-gray-200 bg-white">
-
-        <table class="w-full border-collapse text-left text-sm">
-
-            <thead class="bg-gray-100 text-gray-700">
-                <tr>
-                    <th class="p-3">Data e hora</th>
-                    <th class="p-3">Cliente</th>
-                    <th class="p-3">Barbeiro</th>
-                    <th class="p-3">Serviço</th>
-                    <th class="p-3">Estado</th>
-                    <th class="p-3">Ações</th>
-                </tr>
-            </thead>
-
-            <tbody class="divide-y divide-gray-200">
-
-                @forelse ($appointments as $appointment)
-
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
                     <tr>
-
-                        <td class="p-3">
-                            {{ $appointment->date?->format('d/m/Y') ?? '-' }}
-
-                            @if ($appointment->time)
-                                {{ substr($appointment->time, 0, 5) }}
-                            @endif
-                        </td>
-
-                        <td class="p-3">
-                            {{ $appointment->customer?->name ?? 'Utilizador não encontrado' }}
-                        </td>
-
-                        <td class="p-3">
-                            {{ $appointment->barber?->name ?? 'Barbeiro não encontrado' }}
-                        </td>
-
-                        <td class="p-3">
-                            {{ $appointment->service?->name ?? 'Serviço não encontrado' }}
-                        </td>
-
-                        <td class="p-3">
-                            {{ $appointment->status?->value ?? '-' }}
-                        </td>
-
-                        <td class="p-3">
-
-                            <div class="flex gap-3">
-
-                                <a
-                                    class="text-blue-700 hover:underline"
-                                    href="{{ route('appointments.show', $appointment->id) }}"
-                                >
-                                    Ver
-                                </a>
-
-                                <a
-                                    class="text-blue-700 hover:underline"
-                                    href="{{ route('appointments.edit', $appointment->id) }}"
-                                >
-                                    Editar
-                                </a>
-
-                                <form
-                                    action="{{ route('appointments.destroy', $appointment->id) }}"
-                                    method="POST"
-                                    onsubmit="return confirm('Eliminar este agendamento?')"
-                                >
-                                    @csrf
-                                    @method('DELETE')
-
-                                    <button
-                                        class="text-red-700 hover:underline"
-                                        type="submit"
+                        <th>Data e hora</th>
+                        <th>Cliente</th>
+                        <th>Barbeiro</th>
+                        <th>Serviço</th>
+                        <th>Estado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($appointments as $appointment)
+                        @php($estado = $appointment->status?->value)
+                        <tr>
+                            <td class="num">
+                                {{ $appointment->date?->format('d/m/Y') ?? '-' }}
+                                @if ($appointment->time)
+                                    {{ substr($appointment->time, 0, 5) }}
+                                @endif
+                            </td>
+                            <td>{{ $appointment->customer?->name ?? 'Utilizador não encontrado' }}</td>
+                            <td>{{ $appointment->barber?->name ?? 'Barbeiro não encontrado' }}</td>
+                            <td>{{ $appointment->service?->name ?? 'Serviço não encontrado' }}</td>
+                            <td>
+                                @if ($estado)
+                                    <span class="badge badge-{{ \Illuminate\Support\Str::slug($estado) }}">{{ $estado }}</span>
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="link" href="{{ route('appointments.show', $appointment->id) }}">Ver</a>
+                                    <a class="link" href="{{ route('appointments.edit', $appointment->id) }}">Editar</a>
+                                    <form
+                                        action="{{ route('appointments.destroy', $appointment->id) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('Eliminar esta marcação?')"
                                     >
-                                        Eliminar
-                                    </button>
-                                </form>
-
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-                @empty
-
-                    <tr>
-                        <td
-                            class="p-4 text-center text-gray-500"
-                            colspan="6"
-                        >
-                            Ainda não existem agendamentos.
-                        </td>
-                    </tr>
-
-                @endforelse
-
-            </tbody>
-
-        </table>
-
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="link danger" type="submit">Eliminar</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td class="table-empty" colspan="6">
+                                Ainda não existem marcações.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
-
-</main>
-
-</body>
-</html>
+</div>
+@endsection
