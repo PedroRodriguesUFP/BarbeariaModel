@@ -1,26 +1,52 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <title>Service Details</title>
-</head>
-<body>
+@extends('layouts.barbearia')
 
-<h1>{{ $service->name }}</h1>
+@section('title', $service->name)
 
-<p><strong>Description:</strong> {{ $service->description }}</p>
+@php
+    $categorias = [
+        'hair' => 'Cabelo',
+        'beard' => 'Barba',
+        'hair and beard' => 'Cabelo e barba',
+        'fade' => 'Fade',
+        'coloring' => 'Coloração',
+    ];
+    $categoria = $service->category->value;
+@endphp
 
-<p><strong>Price:</strong> {{ $service->price }} €</p>
+@section('content')
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>{{ $service->name }}</h1>
+            <p class="sub">{{ $categorias[$categoria] ?? $categoria }}</p>
+        </div>
+        <div class="actions">
+            <a class="btn" href="{{ route('services.edit', $service) }}">Editar</a>
+            <a class="btn ghost" href="{{ route('services.index') }}">Voltar</a>
+        </div>
+    </header>
 
-<p><strong>Duration:</strong> {{ $service->duration_minutes }} min</p>
-
-<p><strong>Category:</strong> {{ $service->category->value }}</p>
-
-<a href="{{ route('services.edit', $service) }}">Edit</a>
-
-<br><br>
-
-<a href="{{ route('services.index') }}">Back</a>
-
-</body>
-</html>
+    <div class="page-body narrow">
+        <div class="detail" data-tilt>
+            <dl>
+                <div class="row">
+                    <dt>Preço</dt>
+                    <dd class="big lift-far">{{ number_format($service->price, 2, ',', ' ') }} €</dd>
+                </div>
+                <div class="row">
+                    <dt>Duração</dt>
+                    <dd class="lift">{{ $service->duration_minutes }} min</dd>
+                </div>
+                <div class="row">
+                    <dt>Categoria</dt>
+                    <dd class="lift">{{ $categorias[$categoria] ?? $categoria }}</dd>
+                </div>
+                <div class="row">
+                    <dt>Descrição</dt>
+                    <dd class="plain lift">{{ $service->description ?: '-' }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+</div>
+@endsection

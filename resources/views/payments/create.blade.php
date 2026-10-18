@@ -1,222 +1,69 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Novo pagamento</title>
-</head>
+@extends('layouts.barbearia')
 
-<body class="bg-gray-50 text-gray-900">
+@section('title', 'Novo pagamento')
 
-<main class="mx-auto max-w-2xl px-4 py-10">
+@section('content')
+<div class="wrap">
+    <header class="page-head">
+        <h1>Novo pagamento</h1>
+    </header>
 
-    <h1 class="mb-6 text-2xl font-bold">
-        Novo pagamento
-    </h1>
+    <div class="page-body narrow">
+        @include('partials.messages')
 
-    @if ($errors->any())
-        <ul class="mb-4 list-inside list-disc rounded border border-red-200 bg-red-50 p-3 text-red-800">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    @endif
+        <div class="form-card">
+            <form action="{{ route('payments.store') }}" method="POST">
+                @csrf
 
-    <form
-        class="space-y-4 rounded border border-gray-200 bg-white p-6"
-        action="{{ route('payments.store') }}"
-        method="POST"
-    >
-        @csrf
+                <div class="fields two">
+                    <div class="field">
+                        <label for="appointment_id">ID da marcação</label>
+                        <input id="appointment_id" name="appointment_id" type="number" min="1" value="{{ old('appointment_id') }}" required>
+                    </div>
 
-        <div>
-            <label
-                class="mb-1 block font-medium"
-                for="appointment_id"
-            >
-                ID da marcação
-            </label>
+                    <div class="field">
+                        <label for="payer_id">ID do utilizador que paga</label>
+                        <input id="payer_id" name="payer_id" type="number" min="1" value="{{ old('payer_id') }}" required>
+                    </div>
 
-            <input
-                class="w-full rounded border border-gray-300 px-3 py-2"
-                id="appointment_id"
-                name="appointment_id"
-                type="number"
-                min="1"
-                value="{{ old('appointment_id') }}"
-                required
-            >
+                    <div class="field">
+                        <label for="amount">Valor (€)</label>
+                        <input id="amount" name="amount" type="number" step="0.01" min="0" value="{{ old('amount') }}" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="method">Método</label>
+                        <select id="method" name="method" required>
+                            <option value="">Selecionar método</option>
+                            <option value="cash" @selected(old('method') === 'cash')>Dinheiro</option>
+                            <option value="card" @selected(old('method') === 'card')>Cartão</option>
+                            <option value="mbway" @selected(old('method') === 'mbway')>MB WAY</option>
+                            <option value="transfer" @selected(old('method') === 'transfer')>Transferência</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="status">Estado</label>
+                        <select id="status" name="status" required>
+                            <option value="pending" @selected(old('status', 'pending') === 'pending')>Pendente</option>
+                            <option value="paid" @selected(old('status') === 'paid')>Pago</option>
+                            <option value="failed" @selected(old('status') === 'failed')>Falhado</option>
+                            <option value="refunded" @selected(old('status') === 'refunded')>Reembolsado</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="paid_at">Data de pagamento</label>
+                        <input id="paid_at" name="paid_at" type="datetime-local" value="{{ old('paid_at') }}">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn" type="submit">Criar pagamento</button>
+                    <a class="btn ghost" href="{{ route('payments.index') }}">Voltar</a>
+                </div>
+            </form>
         </div>
-
-        <div>
-            <label
-                class="mb-1 block font-medium"
-                for="payer_id"
-            >
-                ID do utilizador que paga
-            </label>
-
-            <input
-                class="w-full rounded border border-gray-300 px-3 py-2"
-                id="payer_id"
-                name="payer_id"
-                type="number"
-                min="1"
-                value="{{ old('payer_id') }}"
-                required
-            >
-        </div>
-
-        <div>
-            <label
-                class="mb-1 block font-medium"
-                for="amount"
-            >
-                Valor (€)
-            </label>
-
-            <input
-                class="w-full rounded border border-gray-300 px-3 py-2"
-                id="amount"
-                name="amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value="{{ old('amount') }}"
-                required
-            >
-        </div>
-
-        <div>
-            <label
-                class="mb-1 block font-medium"
-                for="method"
-            >
-                Método
-            </label>
-
-            <select
-                class="w-full rounded border border-gray-300 px-3 py-2"
-                id="method"
-                name="method"
-                required
-            >
-                <option value="">
-                    Selecionar método
-                </option>
-
-                <option
-                    value="cash"
-                    @selected(old('method') === 'cash')
-                >
-                    Dinheiro
-                </option>
-
-                <option
-                    value="card"
-                    @selected(old('method') === 'card')
-                >
-                    Cartão
-                </option>
-
-                <option
-                    value="mbway"
-                    @selected(old('method') === 'mbway')
-                >
-                    MB WAY
-                </option>
-
-                <option
-                    value="transfer"
-                    @selected(old('method') === 'transfer')
-                >
-                    Transferência
-                </option>
-            </select>
-        </div>
-
-        <div>
-            <label
-                class="mb-1 block font-medium"
-                for="status"
-            >
-                Estado
-            </label>
-
-            <select
-                class="w-full rounded border border-gray-300 px-3 py-2"
-                id="status"
-                name="status"
-                required
-            >
-                <option
-                    value="pending"
-                    @selected(old('status', 'pending') === 'pending')
-                >
-                    Pendente
-                </option>
-
-                <option
-                    value="paid"
-                    @selected(old('status') === 'paid')
-                >
-                    Pago
-                </option>
-
-                <option
-                    value="failed"
-                    @selected(old('status') === 'failed')
-                >
-                    Falhado
-                </option>
-
-                <option
-                    value="refunded"
-                    @selected(old('status') === 'refunded')
-                >
-                    Reembolsado
-                </option>
-            </select>
-        </div>
-
-        <div>
-            <label
-                class="mb-1 block font-medium"
-                for="paid_at"
-            >
-                Data de pagamento
-            </label>
-
-            <input
-                class="w-full rounded border border-gray-300 px-3 py-2"
-                id="paid_at"
-                name="paid_at"
-                type="datetime-local"
-                value="{{ old('paid_at') }}"
-            >
-        </div>
-
-        <div class="flex gap-3">
-
-            <button
-                class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-                type="submit"
-            >
-                Criar pagamento
-            </button>
-
-            <a
-                class="rounded border border-gray-300 px-4 py-2 hover:bg-gray-100"
-                href="{{ route('payments.index') }}"
-            >
-                Voltar
-            </a>
-
-        </div>
-
-    </form>
-
-</main>
-
-</body>
-</html>
+    </div>
+</div>
+@endsection

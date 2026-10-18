@@ -1,143 +1,87 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamentos</title>
-</head>
+@extends('layouts.barbearia')
 
-<body class="bg-gray-50 text-gray-900">
+@section('title', 'Pagamentos')
 
-<main class="mx-auto max-w-6xl px-4 py-10">
+@php
+    $metodos = [
+        'cash' => 'Dinheiro',
+        'card' => 'Cartão',
+        'mbway' => 'MB WAY',
+        'transfer' => 'Transferência',
+    ];
+    $estados = [
+        'pending' => 'Pendente',
+        'paid' => 'Pago',
+        'failed' => 'Falhado',
+        'refunded' => 'Reembolsado',
+    ];
+@endphp
 
-    <header class="mb-6 flex items-center justify-between gap-4">
-
-        <h1 class="text-2xl font-bold">
-            Pagamentos
-        </h1>
-
-        <a
-            class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-            href="{{ route('payments.create') }}"
-        >
-            Novo pagamento
-        </a>
-
+@section('content')
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>Pagamentos</h1>
+            <p class="sub">Valores recebidos por cada marcação.</p>
+        </div>
+        <a class="btn" href="{{ route('payments.create') }}">Novo pagamento</a>
     </header>
 
-    @if (session('success'))
-        <p class="mb-4 rounded border border-green-200 bg-green-50 p-3 text-green-800">
-            {{ session('success') }}
-        </p>
-    @endif
+    <div class="page-body">
+        @include('partials.messages')
 
-    <div class="overflow-x-auto rounded border border-gray-200 bg-white">
-
-        <table class="w-full border-collapse text-left text-sm">
-
-            <thead class="bg-gray-100 text-gray-700">
-                <tr>
-                    <th class="p-3">Marcação</th>
-                    <th class="p-3">Utilizador</th>
-                    <th class="p-3">Barbeiro</th>
-                    <th class="p-3">Valor</th>
-                    <th class="p-3">Método</th>
-                    <th class="p-3">Estado</th>
-                    <th class="p-3">Ações</th>
-                </tr>
-            </thead>
-
-            <tbody class="divide-y divide-gray-200">
-
-                @forelse ($payments as $payment)
-
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
                     <tr>
-
-                        <td class="p-3">
-                            #{{ $payment->appointment_id }}
-                        </td>
-
-                        <td class="p-3">
-                            {{ $payment->payer?->name ?? '-' }}
-                        </td>
-
-                        <td class="p-3">
-                            {{ $payment->appointment?->barber?->name ?? '-' }}
-                        </td>
-
-                        <td class="p-3">
-                            {{ $payment->getFormattedAmount() }}
-                        </td>
-
-                        <td class="p-3">
-                            {{ $payment->method }}
-                        </td>
-
-                        <td class="p-3">
-                            {{ $payment->status }}
-                        </td>
-
-                        <td class="p-3">
-
-                            <div class="flex gap-3">
-
-                                <a
-                                    class="text-blue-700 hover:underline"
-                                    href="{{ route('payments.show', $payment) }}"
-                                >
-                                    Ver
-                                </a>
-
-                                <a
-                                    class="text-blue-700 hover:underline"
-                                    href="{{ route('payments.edit', $payment) }}"
-                                >
-                                    Editar
-                                </a>
-
-                                <form
-                                    action="{{ route('payments.destroy', $payment) }}"
-                                    method="POST"
-                                    onsubmit="return confirm('Eliminar este pagamento?')"
-                                >
-                                    @csrf
-                                    @method('DELETE')
-
-                                    <button
-                                        class="text-red-700 hover:underline"
-                                        type="submit"
+                        <th>Marcação</th>
+                        <th>Utilizador</th>
+                        <th>Barbeiro</th>
+                        <th>Valor</th>
+                        <th>Método</th>
+                        <th>Estado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($payments as $payment)
+                        <tr>
+                            <td class="num">#{{ $payment->appointment_id }}</td>
+                            <td>{{ $payment->payer?->name ?? '-' }}</td>
+                            <td>{{ $payment->appointment?->barber?->name ?? '-' }}</td>
+                            <td class="num">{{ $payment->getFormattedAmount() }}</td>
+                            <td>{{ $metodos[$payment->method] ?? $payment->method }}</td>
+                            <td>
+                                <span class="badge badge-{{ \Illuminate\Support\Str::slug($payment->status) }}">
+                                    {{ $estados[$payment->status] ?? $payment->status }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="link" href="{{ route('payments.show', $payment) }}">Ver</a>
+                                    <a class="link" href="{{ route('payments.edit', $payment) }}">Editar</a>
+                                    <form
+                                        action="{{ route('payments.destroy', $payment) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('Eliminar este pagamento?')"
                                     >
-                                        Eliminar
-                                    </button>
-
-                                </form>
-
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-                @empty
-
-                    <tr>
-                        <td
-                            class="p-4 text-center text-gray-500"
-                            colspan="7"
-                        >
-                            Ainda não existem pagamentos.
-                        </td>
-                    </tr>
-
-                @endforelse
-
-            </tbody>
-
-        </table>
-
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="link danger" type="submit">Eliminar</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td class="table-empty" colspan="7">
+                                Ainda não existem pagamentos.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
-
-</main>
-
-</body>
-</html>
+</div>
+@endsection

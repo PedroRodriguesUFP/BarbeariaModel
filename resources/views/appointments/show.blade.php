@@ -1,102 +1,56 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalhes do agendamento</title>
-</head>
+@extends('layouts.barbearia')
 
-<body class="bg-gray-50 text-gray-900">
+@section('title', 'Marcação #' . $appointment->id)
 
-<main class="mx-auto max-w-2xl px-4 py-10">
-
-    <h1 class="mb-6 text-2xl font-bold">
-        Detalhes do agendamento #{{ $appointment->id }}
-    </h1>
-
-    <dl class="space-y-3 rounded border border-gray-200 bg-white p-6">
-
+@section('content')
+@php($estado = $appointment->status?->value)
+<div class="wrap">
+    <header class="page-head">
         <div>
-            <dt class="font-semibold">
-                Data
-            </dt>
-
-            <dd>
-                {{ $appointment->date?->format('d/m/Y') ?? '-' }}
-            </dd>
+            <h1>Marcação #{{ $appointment->id }}</h1>
+            <p class="sub">{{ $appointment->service?->name ?? 'Serviço não encontrado' }}</p>
         </div>
-
-        <div>
-            <dt class="font-semibold">
-                Hora
-            </dt>
-
-            <dd>
-                {{ $appointment->time ? substr($appointment->time, 0, 5) : '-' }}
-            </dd>
+        <div class="actions">
+            <a class="btn" href="{{ route('appointments.edit', $appointment->id) }}">Editar</a>
+            <a class="btn ghost" href="{{ route('appointments.index') }}">Voltar</a>
         </div>
+    </header>
 
-        <div>
-            <dt class="font-semibold">
-                Cliente
-            </dt>
-
-            <dd>
-                {{ $appointment->customer?->name ?? 'Utilizador não encontrado' }}
-            </dd>
+    <div class="page-body narrow">
+        <div class="detail" data-tilt>
+            <dl>
+                <div class="row">
+                    <dt>Data</dt>
+                    <dd class="big lift-far">{{ $appointment->date?->format('d/m/Y') ?? '-' }}</dd>
+                </div>
+                <div class="row">
+                    <dt>Hora</dt>
+                    <dd class="lift">{{ $appointment->time ? substr($appointment->time, 0, 5) : '-' }}</dd>
+                </div>
+                <div class="row">
+                    <dt>Cliente</dt>
+                    <dd class="lift">{{ $appointment->customer?->name ?? 'Utilizador não encontrado' }}</dd>
+                </div>
+                <div class="row">
+                    <dt>Barbeiro</dt>
+                    <dd class="lift">{{ $appointment->barber?->name ?? 'Barbeiro não encontrado' }}</dd>
+                </div>
+                <div class="row">
+                    <dt>Serviço</dt>
+                    <dd class="lift">{{ $appointment->service?->name ?? 'Serviço não encontrado' }}</dd>
+                </div>
+                <div class="row">
+                    <dt>Estado</dt>
+                    <dd class="lift">
+                        @if ($estado)
+                            <span class="badge badge-{{ \Illuminate\Support\Str::slug($estado) }}">{{ $estado }}</span>
+                        @else
+                            -
+                        @endif
+                    </dd>
+                </div>
+            </dl>
         </div>
-
-        <div>
-            <dt class="font-semibold">
-                Barbeiro
-            </dt>
-
-            <dd>
-                {{ $appointment->barber?->name ?? 'Barbeiro não encontrado' }}
-            </dd>
-        </div>
-
-        <div>
-            <dt class="font-semibold">
-                Serviço
-            </dt>
-
-            <dd>
-                {{ $appointment->service?->name ?? 'Serviço não encontrado' }}
-            </dd>
-        </div>
-
-        <div>
-            <dt class="font-semibold">
-                Estado
-            </dt>
-
-            <dd>
-                {{ $appointment->status?->value ?? '-' }}
-            </dd>
-        </div>
-
-    </dl>
-
-    <div class="mt-6 flex gap-3">
-
-        <a
-            class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-            href="{{ route('appointments.edit', $appointment->id) }}"
-        >
-            Editar
-        </a>
-
-        <a
-            class="rounded border border-gray-300 px-4 py-2 hover:bg-gray-100"
-            href="{{ route('appointments.index') }}"
-        >
-            Voltar
-        </a>
-
     </div>
-
-</main>
-
-</body>
-</html>
+</div>
+@endsection
