@@ -37,7 +37,7 @@
                                     {{ substr($appointment->time, 0, 5) }}
                                 @endif
                             </td>
-                            <td>{{ $appointment->customer?->name ?? 'Utilizador não encontrado' }}</td>
+                            <td>{{ $appointment->customerDisplayName() }}</td>
                             <td>{{ $appointment->barber?->name ?? 'Barbeiro não encontrado' }}</td>
                             <td>{{ $appointment->service?->name ?? 'Serviço não encontrado' }}</td>
                             <td>

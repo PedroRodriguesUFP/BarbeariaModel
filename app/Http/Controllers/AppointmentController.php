@@ -12,14 +12,25 @@ use Illuminate\Validation\ValidationException;
 
 class AppointmentController extends Controller
 {
-    // Lista todas as marcações.
-    public function index()
+    public function index(Request $request)
     {
-        $appointments = Appointment::with([
+        $this->authorize('viewAny', Appointment::class);
+
+        $query = Appointment::with([
             'customer',
             'barber',
             'service',
-        ])->get();
+        ]);
+
+        $user = $request->user();
+
+        if ($user->role === UserRole::Client) {
+            $query->where('customer_id', $user->id);
+        } elseif ($user->role === UserRole::Barber) {
+            $query->where('barber_id', $user->id);
+        }
+
+        $appointments = $query->get();
 
         return view(
             'appointments.index',
@@ -27,15 +38,17 @@ class AppointmentController extends Controller
         );
     }
 
-    // Apresenta o formulário de criação.
     public function create()
     {
+        $this->authorize('create', Appointment::class);
+
         return view('appointments.create');
     }
 
-    // Cria uma nova marcação.
     public function store(Request $request)
     {
+        $this->authorize('create', Appointment::class);
+
         $request->validate([
             'date' => [
                 'required',
@@ -46,7 +59,7 @@ class AppointmentController extends Controller
             'time' => [
                 'required',
                 'date_format:H:i',
-            ],  
+            ],
 
             'barber_id' => [
                 'required',
@@ -70,15 +83,6 @@ class AppointmentController extends Controller
             $request->input('service_id')
         );
 
-        /*
-         * Verifica:
-         *
-         * - se é barbeiro;
-         * - se realiza o serviço;
-         * - se trabalha nesse horário;
-         * - se existem bloqueios;
-         * - se já tem outra marcação.
-         */
         if (! $barber->isAvailableFor(
             $service,
             $request->input('date'),
@@ -90,7 +94,7 @@ class AppointmentController extends Controller
             ]);
         }
 
-                Appointment::create([
+        Appointment::create([
             'date' => $request->input('date'),
             'time' => $request->input('time'),
             'customer_id' => $request->user()->id,
@@ -106,7 +110,6 @@ class AppointmentController extends Controller
             );
     }
 
-    // Mostra uma marcação.
     public function show($id)
     {
         $appointment = Appointment::with([
@@ -115,16 +118,19 @@ class AppointmentController extends Controller
             'service',
         ])->findOrFail($id);
 
+        $this->authorize('view', $appointment);
+
         return view(
             'appointments.show',
             compact('appointment')
         );
     }
 
-    // Formulário de edição.
     public function edit($id)
     {
         $appointment = Appointment::findOrFail($id);
+
+        $this->authorize('update', $appointment);
 
         return view(
             'appointments.edit',
@@ -132,9 +138,12 @@ class AppointmentController extends Controller
         );
     }
 
-    // Atualiza uma marcação.
     public function update(Request $request, $id)
     {
+        $appointment = Appointment::findOrFail($id);
+
+        $this->authorize('update', $appointment);
+
         $request->validate([
             'date' => [
                 'required',
@@ -161,8 +170,6 @@ class AppointmentController extends Controller
             ],
         ]);
 
-        $appointment = Appointment::findOrFail($id);
-
         $barber = User::findOrFail(
             $request->input('barber_id')
         );
@@ -171,10 +178,6 @@ class AppointmentController extends Controller
             $request->input('service_id')
         );
 
-        /*
-         * Passamos o ID da própria marcação para ela
-         * não entrar em conflito consigo mesma.
-         */
         if (! $barber->isAvailableFor(
             $service,
             $request->input('date'),
@@ -187,7 +190,7 @@ class AppointmentController extends Controller
             ]);
         }
 
-                $appointment->update([
+        $appointment->update([
             'date' => $request->input('date'),
             'time' => $request->input('time'),
             'service_id' => $service->id,
@@ -202,10 +205,11 @@ class AppointmentController extends Controller
             );
     }
 
-    // Elimina uma marcação.
     public function destroy($id)
     {
         $appointment = Appointment::findOrFail($id);
+
+        $this->authorize('delete', $appointment);
 
         $appointment->delete();
 

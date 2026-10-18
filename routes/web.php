@@ -7,6 +7,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceController;
 use App\Models\Service;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CalendarController;
 
 
 // ======================================================
@@ -32,7 +33,7 @@ Route::post(
     [LoginController::class, 'login']
 );
 
-Route::post(
+Route::middleware('auth')->post(
     '/logout',
     [LoginController::class, 'logout']
 )->name('logout');
@@ -92,5 +93,24 @@ Route::middleware('auth')->group(function () {
         '/checkout/{serviceId}',
         [PaymentController::class, 'checkout']
     )->name('checkout');
+
+    // ======================================================
+// CALENDÁRIO DO BARBEIRO
+// ======================================================
+
+Route::middleware(['auth', 'role:barber'])->group(function () {
+
+    Route::get('/calendar', [CalendarController::class, 'mine'])->name('calendar.mine');
+    Route::get('/calendar/appointments/create', [CalendarController::class, 'create'])->name('calendar.appointments.create');
+    Route::post('/calendar/appointments', [CalendarController::class, 'store'])->name('calendar.appointments.store');
+
+});
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+
+    Route::get('/barbers', [CalendarController::class, 'barbers'])->name('barbers.index');
+    Route::get('/barbers/{barber}/calendar', [CalendarController::class, 'show'])->name('barbers.calendar');
+
+});
 
 });
