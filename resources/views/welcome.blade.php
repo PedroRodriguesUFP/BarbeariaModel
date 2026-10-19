@@ -6,7 +6,7 @@
 <div class="wrap">
     <section class="hero" aria-labelledby="titulo">
         <div>
-            <h1 id="titulo">Corte certo, à hora marcada.</h1>
+            <h1>Corte certo, à hora marcada</h1>
             <p class="lead">
                 Cabelo, barba e fade com barbeiros que conhecem o ofício.
                 Escolha o serviço e reserve o seu lugar em menos de um minuto.
