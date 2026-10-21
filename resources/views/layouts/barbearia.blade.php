@@ -122,6 +122,17 @@
 
             </nav>
 
+            <div class="account">
+                @auth
+                    <span class="who">{{ auth()->user()->name }}</span>
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button class="link" type="submit">Sair</button>
+                    </form>
+                @else
+                    <a class="btn small ghost" href="{{ route('login') }}">Entrar</a>
+                @endauth
+            </div>
         </header>
     </div>
 
@@ -146,11 +157,10 @@
         </div>
     </footer>
 
+    @unless (request()->routeIs('appointments.create', 'login'))
+        <a class="btn sticky-cta" href="{{ route('appointments.create') }}">Marcar horário</a>
+    @endunless
 
-    <script
-        src="{{ asset('js/barbearia.js') }}"
-        defer
-    ></script>
-
+    <script src="{{ asset('js/barbearia.js') }}" defer></script>
 </body>
 </html>

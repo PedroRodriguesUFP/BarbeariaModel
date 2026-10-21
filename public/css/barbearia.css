@@ -1,38 +1,52 @@
 /* Barbearia — sistema visual partilhado (welcome + todas as views) */
 
+/* Cores: light-dark(claro, escuro) escolhe sozinho conforme o sistema do utilizador */
 :root {
-    --paper: #e8edf0;
-    --ink: #12243a;
-    --steel: #566678;
-    --line: #c5cfd8;
-    --red: #c23b2e;
-    --red-dark: #a42e23;
+    color-scheme: light dark;
+
+    --paper: light-dark(#e8edf0, #0e1b2c);
+    --ink: light-dark(#12243a, #e8edf0);
+    --steel: light-dark(#566678, #9bacbd);
+    --line: light-dark(#c5cfd8, #263a52);
+    --red: light-dark(#c23b2e, #e0594b);
+    --red-dark: light-dark(#a42e23, #c94a3d);
     --sky: #8fb3d1;
-    --white: #ffffff;
-    --card: #ffffff;
+    --white: light-dark(#ffffff, #0e1b2c);
+    --card: light-dark(#ffffff, #142840);
+
+    /* brilho que segue o rato nos cartões 3D */
+    --glow: light-dark(rgb(143 179 209 / 0.25), rgb(143 179 209 / 0.18));
+
+    /* grão de papel, muito subtil (SVG pequeno, sem imagens externas) */
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .07 0 0 0 0 .14 0 0 0 0 .23 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* No escuro o grão tem de ser claro, senão não se vê */
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-        --paper: #0e1b2c;
-        --ink: #e8edf0;
-        --steel: #9bacbd;
-        --line: #263a52;
-        --red: #e0594b;
-        --red-dark: #c94a3d;
-        --sky: #8fb3d1;
-        --white: #0e1b2c;
-        --card: #142840;
+    :root {
+        --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .93 0 0 0 0 .94 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html {
+    scroll-behavior: smooth;
+    /* o foco por teclado nunca fica tapado pelo botão fixo do telemóvel */
+    scroll-padding-bottom: 6rem;
+}
+
+/* Transição suave entre páginas (Chrome e Safari; os outros navegam normalmente) */
+@view-transition { navigation: auto; }
+
+.topbar { view-transition-name: topbar; }
+
+h1, h2 { text-wrap: balance; }
+p { text-wrap: pretty; }
 
 body {
     margin: 0;
-    background: var(--paper);
+    background: var(--grain), var(--paper);
     color: var(--ink);
     font-family: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
     font-size: 1.0625rem;
@@ -107,9 +121,20 @@ a { color: inherit; }
     text-underline-offset: 6px;
 }
 
+.account {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 3px; /* espaço para a sombra do botão */
+}
+
+.account form { margin: 0; }
+.account .who { font-weight: 500; font-size: 0.95rem; color: var(--steel); }
+
 @media (max-width: 40rem) {
     .topbar { flex-wrap: wrap; }
     .topbar nav { order: 3; width: 100%; gap: 1.25rem; }
+    .account .who { display: none; }
 }
 
 /* ---------- Botões (3D: assentam ao carregar) ---------- */
@@ -393,13 +418,14 @@ a { color: inherit; }
     border: 2px solid var(--ink);
     border-radius: 0.25rem;
     box-shadow: 0.6rem 0.6rem 0 var(--line);
-    overflow: hidden;
+    /* sem overflow: hidden aqui, senão o CSS "achata" o 3D dos filhos */
 }
 
 .detail::before {
     content: "";
     display: block;
     height: 0.6rem;
+    border-radius: 0.1rem 0.1rem 0 0;
     background: repeating-linear-gradient(
         -45deg,
         var(--red) 0 0.7rem,
@@ -497,6 +523,32 @@ a { color: inherit; }
 /* Conteúdo que flutua à frente do cartão */
 [data-tilt] .lift { transform: translateZ(26px); }
 [data-tilt] .lift-far { transform: translateZ(46px); }
+
+/* Brilho que segue o rato. Vai no fundo do cartão, por isso não mexe no contraste do texto */
+.card.is-tilting,
+.detail.is-tilting {
+    background-image: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--glow), transparent 55%);
+}
+
+/* Os cartões "entram" em 3D à medida que aparecem no ecrã.
+   Só onde o navegador sabe fazer isto e se a pessoa não pediu menos movimento.
+   Usa as propriedades rotate/translate para não chocar com a inclinação do rato. */
+@supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+        .cards { perspective: 1000px; }
+
+        .cards .card {
+            animation: card-in linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 55%;
+        }
+
+        @keyframes card-in {
+            from { opacity: 0; rotate: 1 0 0 16deg; translate: 0 2rem; }
+            to   { opacity: 1; rotate: 1 0 0 0deg;  translate: 0 0; }
+        }
+    }
+}
 
 /* ---------- Hero ---------- */
 .hero {
@@ -596,6 +648,7 @@ a { color: inherit; }
 
 @media (max-width: 51.99rem) {
     .pole-wrap { justify-content: flex-start; padding: 0; perspective: none; }
+    .pole-stage { width: 100%; max-width: 22rem; }
     .pole-stage::after { display: none; }
     .pole {
         width: 100%;
@@ -696,9 +749,42 @@ a { color: inherit; }
 
 .site-footer a { text-underline-offset: 4px; }
 
+/* ---------- Botão fixo "Marcar" (só no telemóvel) ---------- */
+.sticky-cta { display: none; }
+
+@media (max-width: 40rem) {
+    .sticky-cta {
+        display: block;
+        position: fixed;
+        z-index: 20;
+        left: 1rem;
+        right: 1rem;
+        bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+        text-align: center;
+    }
+
+    /* espaço no fim da página para o botão não tapar o rodapé */
+    .site-footer { padding-bottom: 6rem; }
+}
+
+/* ---------- Ecrãs tácteis: alvos maiores (WCAG 2.5.8) ---------- */
+@media (pointer: coarse) {
+    .link,
+    .btn.small {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.75rem;
+    }
+
+    .row-actions { gap: 1.25rem; }
+    .topbar nav a { padding: 0.6rem 0; }
+}
+
 /* ---------- Movimento reduzido ---------- */
 @media (prefers-reduced-motion: reduce) {
     .pole { animation: none; }
+
+    @view-transition { navigation: none; }
 
     [data-tilt],
     [data-tilt].is-tilting {
