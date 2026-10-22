@@ -15,31 +15,40 @@ class PaymentController extends Controller
 {
     public function index()
     {
+        $this->authorize('viewAny', Payment::class);
+
         $payments = Payment::with([
             'payer',
             'appointment.barber',
             'appointment.service',
-        ])->get();
+        ])
+            ->when(
+                ! auth()->user()->isAdmin(),
+                fn ($query) => $query->where(
+                    'payer_id',
+                    auth()->id()
+                )
+            )
+            ->get();
 
         return view('payments.index', compact('payments'));
     }
 
     public function create()
     {
+        $this->authorize('create', Payment::class);
+
         return view('payments.create');
     }
 
     public function store(Request $request)
     {
+        $this->authorize('create', Payment::class);
+
         $request->validate([
             'appointment_id' => [
                 'required',
                 'exists:appointments,id',
-            ],
-
-            'payer_id' => [
-                'required',
-                'exists:users,id',
             ],
 
             'amount' => [
@@ -78,21 +87,22 @@ class PaymentController extends Controller
             $request->input('appointment_id')
         );
 
-        // O pagamento deve ser feito pelo utilizador
-        // que efetuou a marcação.
+        // O pagamento só pode ser feito pelo utilizador
+        // autenticado que efetuou a marcação. payer_id
+        // nunca vem do formulário, vem sempre da sessão.
         if (
             (int) $appointment->customer_id !==
-            (int) $request->input('payer_id')
+            (int) auth()->id()
         ) {
             throw ValidationException::withMessages([
-                'payer_id' =>
-                    'O utilizador indicado não corresponde ao utilizador da marcação.',
+                'appointment_id' =>
+                    'Só podes pagar marcações feitas por ti.',
             ]);
         }
 
         Payment::create([
             'appointment_id' => $appointment->id,
-            'payer_id' => $request->input('payer_id'),
+            'payer_id' => auth()->id(),
             'amount' => $request->input('amount'),
             'method' => $request->input('method'),
             'status' => $request->input('status'),
@@ -115,6 +125,8 @@ class PaymentController extends Controller
             'appointment.service',
         ])->findOrFail($id);
 
+        $this->authorize('view', $payment);
+
         return view(
             'payments.show',
             compact('payment')
@@ -125,6 +137,8 @@ class PaymentController extends Controller
     {
         $payment = Payment::findOrFail($id);
 
+        $this->authorize('update', $payment);
+
         return view(
             'payments.edit',
             compact('payment')
@@ -133,15 +147,14 @@ class PaymentController extends Controller
 
     public function update(Request $request, $id)
     {
+        $payment = Payment::findOrFail($id);
+
+        $this->authorize('update', $payment);
+
         $request->validate([
             'appointment_id' => [
                 'required',
                 'exists:appointments,id',
-            ],
-
-            'payer_id' => [
-                'required',
-                'exists:users,id',
             ],
 
             'amount' => [
@@ -176,25 +189,24 @@ class PaymentController extends Controller
             ],
         ]);
 
-        $payment = Payment::findOrFail($id);
-
         $appointment = Appointment::findOrFail(
             $request->input('appointment_id')
         );
 
+        // payer_id não é editável: o pagamento continua
+        // associado a quem o criou originalmente.
         if (
             (int) $appointment->customer_id !==
-            (int) $request->input('payer_id')
+            (int) $payment->payer_id
         ) {
             throw ValidationException::withMessages([
-                'payer_id' =>
-                    'O utilizador indicado não corresponde ao utilizador da marcação.',
+                'appointment_id' =>
+                    'A marcação indicada não pertence a este pagamento.',
             ]);
         }
 
         $payment->update([
             'appointment_id' => $appointment->id,
-            'payer_id' => $request->input('payer_id'),
             'amount' => $request->input('amount'),
             'method' => $request->input('method'),
             'status' => $request->input('status'),
@@ -212,6 +224,8 @@ class PaymentController extends Controller
     public function destroy($id)
     {
         $payment = Payment::findOrFail($id);
+
+        $this->authorize('delete', $payment);
 
         $payment->delete();
 

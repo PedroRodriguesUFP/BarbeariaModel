@@ -25,7 +25,9 @@
             <p class="sub">Marcação #{{ $payment->appointment_id }}</p>
         </div>
         <div class="actions">
-            <a class="btn" href="{{ route('payments.edit', $payment) }}">Editar</a>
+            @can('update', $payment)
+                <a class="btn" href="{{ route('payments.edit', $payment) }}">Editar</a>
+            @endcan
             <a class="btn ghost" href="{{ route('payments.index') }}">Voltar</a>
         </div>
     </header>

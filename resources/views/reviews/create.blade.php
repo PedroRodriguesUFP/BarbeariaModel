@@ -16,11 +16,6 @@
                 @csrf
 
                 <div class="fields two">
-                    <div class="field full">
-                        <label for="reviewer_id">ID do utilizador</label>
-                        <input id="reviewer_id" name="reviewer_id" type="number" min="1" value="{{ old('reviewer_id') }}" required>
-                    </div>
-
                     <div class="field">
                         <label for="reviewable_type">Avaliação sobre</label>
                         <select id="reviewable_type" name="reviewable_type" required>

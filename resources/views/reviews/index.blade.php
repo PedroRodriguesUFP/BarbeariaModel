@@ -39,7 +39,10 @@
 
                         <div class="row-actions lift">
                             <a class="link" href="{{ route('reviews.show', $review) }}">Ver</a>
-                            <a class="link" href="{{ route('reviews.edit', $review) }}">Editar</a>
+                            @can('update', $review)
+                                <a class="link" href="{{ route('reviews.edit', $review) }}">Editar</a>
+                            @endcan
+                            @can('delete', $review)
                             <form
                                 action="{{ route('reviews.destroy', $review) }}"
                                 method="POST"
@@ -49,6 +52,7 @@
                                 @method('DELETE')
                                 <button class="link danger" type="submit">Eliminar</button>
                             </form>
+                            @endcan
                         </div>
                     </article>
                 @endforeach
