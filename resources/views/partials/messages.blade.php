@@ -2,7 +2,7 @@
     <p class="flash" role="status">{{ session('success') }}</p>
 @endif
 
-@if ($errors->any())
+@if (($showErrors ?? true) && $errors->any())
     <div class="errors" role="alert">
         <strong>Corrija os campos abaixo:</strong>
         <ul>
