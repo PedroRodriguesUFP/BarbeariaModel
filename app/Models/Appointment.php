@@ -15,6 +15,8 @@ class Appointment extends Model
     'time',
     'status',
     'customer_id',
+    'walk_in_name',
+    'walk_in_phone',
     'service_id',
     'barber_id',
     ];
@@ -183,5 +185,18 @@ class Appointment extends Model
             throw new \Exception('The appointment cannot be cancelled.');
         }
 
+    }
+    public function isWalkIn(): bool
+    {
+        return $this->customer_id === null;
+    }
+
+    public function customerDisplayName(): string
+    {
+        if ($this->customer) {
+            return $this->customer->name;
+        }
+
+        return $this->walk_in_name ?? 'Cliente sem conta';
     }
 }
