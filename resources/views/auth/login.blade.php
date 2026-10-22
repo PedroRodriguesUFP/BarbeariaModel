@@ -36,9 +36,25 @@
                     </div>
                 </div>
 
+                <div style="margin-top: 10px;">
+                    <a href="{{ route('password.request') }}">
+                        Esqueci-me da palavra-passe
+                    </a>
+                </div>
+                <div class="form-actions" style="margin-top: 16px;">
+    <a class="btn ghost" href="{{ route('auth.google') }}">
+        Entrar com Google
+    </a>
+                </div>
+
                 <div class="form-actions">
-                    <button class="btn" type="submit">Entrar</button>
-                    <a class="btn ghost" href="{{ route('home') }}">Voltar</a>
+                    <button class="btn" type="submit">
+                        Entrar
+                    </button>
+
+                    <a class="btn ghost" href="{{ route('home') }}">
+                        Voltar
+                    </a>
                 </div>
             </form>
         </div>

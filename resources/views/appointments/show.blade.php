@@ -29,7 +29,7 @@
                 </div>
                 <div class="row">
                     <dt>Cliente</dt>
-                    <dd class="lift">{{ $appointment->customer?->name ?? 'Utilizador não encontrado' }}</dd>
+                    <dd class="lift">{{ $appointment->customerDisplayName() }}</dd>
                 </div>
                 <div class="row">
                     <dt>Barbeiro</dt>

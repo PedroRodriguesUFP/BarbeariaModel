@@ -7,7 +7,10 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceController;
 use App\Models\Service;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Auth\GoogleLoginController;
 
 // ======================================================
 // ROTAS PÚBLICAS
@@ -32,7 +35,7 @@ Route::post(
     [LoginController::class, 'login']
 );
 
-Route::post(
+Route::middleware('auth')->post(
     '/logout',
     [LoginController::class, 'logout']
 )->name('logout');
@@ -92,5 +95,60 @@ Route::middleware('auth')->group(function () {
         '/checkout/{serviceId}',
         [PaymentController::class, 'checkout']
     )->name('checkout');
+
+    // ======================================================
+    // CALENDÁRIO DO BARBEIRO
+    // ======================================================
+
+    Route::middleware(['auth', 'role:barber'])->group(function () {
+
+    Route::get('/calendar', [CalendarController::class, 'mine'])->name('calendar.mine');
+    Route::get('/calendar/appointments/create', [CalendarController::class, 'create'])->name('calendar.appointments.create');
+    Route::post('/calendar/appointments', [CalendarController::class, 'store'])->name('calendar.appointments.store');
+
+    });
+
+    Route::middleware(['auth', 'role:admin'])->group(function () {
+
+    Route::get('/barbers', [CalendarController::class, 'barbers'])->name('barbers.index');
+    Route::get('/barbers/{barber}/calendar', [CalendarController::class, 'show'])->name('barbers.calendar');
+
+    });
+    
+
+    });
+    Route::middleware('guest')->group(function () {
+
+    Route::get(
+        '/esqueci-password',
+        [ForgotPasswordController::class, 'showLinkRequestForm']
+    )->name('password.request');
+
+    Route::post(
+        '/esqueci-password',
+        [ForgotPasswordController::class, 'sendResetLinkEmail']
+    )->name('password.email');
+
+    Route::get(
+        '/repor-password/{token}',
+        [ResetPasswordController::class, 'showResetForm']
+    )->name('password.reset');
+
+    Route::post(
+        '/repor-password',
+        [ResetPasswordController::class, 'reset']
+    )->name('password.update');
+   });
+   Route::middleware('guest')->group(function () {
+
+    Route::get(
+        '/auth/google',
+        [GoogleLoginController::class, 'redirect']
+    )->name('auth.google');
+
+    Route::get(
+        '/auth/google/callback',
+        [GoogleLoginController::class, 'callback']
+    )->name('auth.google.callback');
 
 });

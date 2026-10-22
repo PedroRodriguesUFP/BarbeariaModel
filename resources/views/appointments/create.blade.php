@@ -16,10 +16,6 @@
                 @csrf
 
                 <div class="fields two">
-                    <div class="field">
-                        <label for="customer_id">ID do utilizador que marca</label>
-                        <input id="customer_id" name="customer_id" type="number" min="1" value="{{ old('customer_id') }}" required>
-                    </div>
 
                     <div class="field">
                         <label for="barber_id">ID do barbeiro</label>
