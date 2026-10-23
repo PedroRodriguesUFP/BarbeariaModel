@@ -220,4 +220,56 @@ class AppointmentController extends Controller
                 'Marcação eliminada com sucesso.'
             );
     }
+    // Dentro de AppointmentController.php:
+
+ public function confirm(Request $request, Appointment$appointment)
+ {
+    $user =$request->user();
+
+    if ((int) $appointment->barber_id !== (int) $user->id && !$user->isAdmin()) {
+        abort(403);
+    }
+
+    if ($appointment->status !== \App\Enums\Status::Pending) {
+        return back()->withErrors(['status' => 'Apenas marcações pendentes podem ser confirmadas.']);
+    }
+
+    $appointment->confirmAppointment();
+
+    return back()->with('success', 'Marcação confirmada.');
+}
+
+public function complete(Request $request, Appointment$appointment)
+{
+    $user =$request->user();
+
+    if ((int) $appointment->barber_id !== (int) $user->id && !$user->isAdmin()) {
+        abort(403);
+    }
+
+    if ($appointment->status !== \App\Enums\Status::Confirmed) {
+        return back()->withErrors(['status' => 'Apenas marcações confirmadas podem ser concluídas.']);
+    }
+
+    $appointment->completeAppointment();
+
+    return back()->with('success', 'Marcação concluída.');
+}
+
+public function cancel(Request $request, Appointment$appointment)
+{
+    $user =$request->user();
+
+    if ((int) $appointment->barber_id !== (int) $user->id && !$user->isAdmin()) {
+        abort(403);
+    }
+
+    if (!in_array($appointment->status, [\App\Enums\Status::Pending, \App\Enums\Status::Confirmed], true)) {
+        return back()->withErrors(['status' => 'Esta marcação já não pode ser cancelada.']);
+    }
+
+    $appointment->cancelAppointment();
+
+    return back()->with('success', 'Marcação cancelada.');
+    }
 }

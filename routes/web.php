@@ -11,7 +11,30 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\GoogleLoginController;
+use App\Http\Controllers\BarberController;
 
+// ... manter rotas públicas e de autenticação existentes ...
+
+Route::middleware(['auth'])->group(function () {
+    // Rotas de transição de estado na marcação (protegidas no controller/policy)
+    Route::patch('/appointments/{appointment}/confirm', [AppointmentController::class, 'confirm'])
+        ->name('appointments.confirm');
+    Route::patch('/appointments/{appointment}/complete', [AppointmentController::class, 'complete'])
+        ->name('appointments.complete');
+    Route::patch('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])
+        ->name('appointments.cancel');
+
+    // Área exclusiva do Barbeiro
+    Route::middleware(['role:barber'])->prefix('barber')->name('barber.')->group(function () {
+        Route::get('/', [BarberController::class, 'dashboard'])->name('dashboard');
+        Route::get('/availability', [BarberController::class, 'availability'])->name('availability');
+        Route::put('/availability/hours', [BarberController::class, 'updateWorkingHours'])->name('availability.hours');
+        Route::post('/availability/blocks', [BarberController::class, 'storeBlock'])->name('availability.blocks.store');
+        Route::delete('/availability/blocks/{block}', [BarberController::class, 'destroyBlock'])->name('availability.blocks.destroy');
+        Route::get('/services', [BarberController::class, 'services'])->name('services');
+        Route::get('/reviews', [BarberController::class, 'reviews'])->name('reviews');
+    });
+});
 // ======================================================
 // ROTAS PÚBLICAS
 // ======================================================

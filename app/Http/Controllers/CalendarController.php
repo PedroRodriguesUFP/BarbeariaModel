@@ -17,99 +17,261 @@ class CalendarController extends Controller
     {
         return view(
             'calendar.show',
-            $this->buildCalendarData($request->user(), $request->query('month'))
+            $this->buildCalendarData(
+                $request->user(),
+                $request->query('month')
+            )
         );
     }
 
     public function show(Request $request, User $barber)
     {
-        abort_unless($barber->role === UserRole::Barber, 404);
+        abort_unless(
+            $barber->role === UserRole::Barber,
+            404
+        );
 
-        $this->authorize('viewBarberCalendar', $barber);
+        $this->authorize(
+            'viewBarberCalendar',
+            $barber
+        );
 
         return view(
             'calendar.show',
-            $this->buildCalendarData($barber, $request->query('month'), readOnly: true)
+            $this->buildCalendarData(
+                $barber,
+                $request->query('month'),
+                readOnly: true
+            )
         );
     }
 
     public function barbers()
     {
-        $barbers = User::where('role', UserRole::Barber)
+        $barbers = User::where(
+            'role',
+            UserRole::Barber
+        )
             ->orderBy('name')
             ->get();
 
-        return view('barbers.index', compact('barbers'));
+        return view(
+            'barbers.index',
+            compact('barbers')
+        );
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $this->authorize('createWalkIn', Appointment::class);
+        $this->authorize(
+            'createWalkIn',
+            Appointment::class
+        );
 
-        $clients = User::where('role', UserRole::Client)
+        $barber = $request->user();
+
+        $clients = User::where(
+            'role',
+            UserRole::Client
+        )
             ->orderBy('name')
             ->get();
 
-        return view('calendar.create', compact('clients'));
+        $services = $barber
+            ->services()
+            ->orderBy('name')
+            ->get();
+
+        return view(
+            'calendar.create',
+            compact(
+                'barber',
+                'clients',
+                'services'
+            )
+        );
     }
 
     public function store(Request $request)
     {
-        $this->authorize('createWalkIn', Appointment::class);
-
-        $data = $request->validate([
-            'date' => ['required', 'date', 'after_or_equal:today'],
-            'time' => ['required', 'date_format:H:i'],
-            'service_id' => ['required', 'exists:services,id'],
-            'client_type' => ['required', Rule::in(['existing', 'walk_in'])],
-            'customer_id' => [
-                'required_if:client_type,existing',
-                'nullable',
-                Rule::exists('users', 'id')->where('role', UserRole::Client->value),
-            ],
-            'walk_in_name' => ['required_if:client_type,walk_in', 'nullable', 'string', 'max:255'],
-            'walk_in_phone' => ['nullable', 'string', 'max:30'],
-        ]);
+        $this->authorize(
+            'createWalkIn',
+            Appointment::class
+        );
 
         $barber = $request->user();
-        $service = Service::findOrFail($data['service_id']);
 
-        if (! $barber->isAvailableFor($service, $data['date'], $data['time'])) {
+        $allowedServiceIds = $barber
+            ->services()
+            ->pluck('services.id')
+            ->toArray();
+
+        $data = $request->validate(
+            [
+                'date' => [
+                    'required',
+                    'date',
+                    'after_or_equal:today',
+                ],
+
+                'time' => [
+                    'required',
+                    'date_format:H:i',
+                ],
+
+                'service_id' => [
+                    'required',
+                    'integer',
+                    Rule::in(
+                        $allowedServiceIds
+                    ),
+                ],
+
+                'client_type' => [
+                    'required',
+                    Rule::in([
+                        'existing',
+                        'walk_in',
+                    ]),
+                ],
+
+                'customer_id' => [
+                    'required_if:client_type,existing',
+                    'nullable',
+                    Rule::exists(
+                        'users',
+                        'id'
+                    )->where(
+                        'role',
+                        UserRole::Client->value
+                    ),
+                ],
+
+                'walk_in_name' => [
+                    'required_if:client_type,walk_in',
+                    'nullable',
+                    'string',
+                    'max:255',
+                ],
+
+                'walk_in_phone' => [
+                    'nullable',
+                    'string',
+                    'max:30',
+                ],
+            ],
+            [
+                'service_id.in' =>
+                    'Este barbeiro não realiza o serviço selecionado.',
+            ]
+        );
+
+        $service = Service::findOrFail(
+            $data['service_id']
+        );
+
+        if (! $barber->isAvailableFor(
+            $service,
+            $data['date'],
+            $data['time']
+        )) {
             throw ValidationException::withMessages([
-                'time' => 'Já tens outra marcação, bloqueio ou indisponibilidade nesse horário.',
+                'time' =>
+                    'Já tens outra marcação, bloqueio ou indisponibilidade nesse horário.',
             ]);
         }
 
         Appointment::create([
-            'date' => $data['date'],
-            'time' => $data['time'],
-            'service_id' => $service->id,
-            'barber_id' => $barber->id,
-            'customer_id' => $data['client_type'] === 'existing' ? $data['customer_id'] : null,
-            'walk_in_name' => $data['client_type'] === 'walk_in' ? $data['walk_in_name'] : null,
-            'walk_in_phone' => $data['client_type'] === 'walk_in' ? ($data['walk_in_phone'] ?? null) : null,
+            'date' =>
+                $data['date'],
+
+            'time' =>
+                $data['time'],
+
+            'service_id' =>
+                $service->id,
+
+            'barber_id' =>
+                $barber->id,
+
+            'customer_id' =>
+                $data['client_type'] === 'existing'
+                    ? $data['customer_id']
+                    : null,
+
+            'walk_in_name' =>
+                $data['client_type'] === 'walk_in'
+                    ? $data['walk_in_name']
+                    : null,
+
+            'walk_in_phone' =>
+                $data['client_type'] === 'walk_in'
+                    ? ($data['walk_in_phone'] ?? null)
+                    : null,
         ]);
 
         return redirect()
             ->route('calendar.mine')
-            ->with('success', 'Marcação adicionada à agenda.');
+            ->with(
+                'success',
+                'Marcação adicionada à agenda.'
+            );
     }
 
-    private function buildCalendarData(User $barber, ?string $monthParam, bool $readOnly = false): array
-    {
-        $month = ($monthParam && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $monthParam))
-            ? Carbon::createFromFormat('Y-m', $monthParam)->startOfMonth()
+    private function buildCalendarData(
+        User $barber,
+        ?string $monthParam,
+        bool $readOnly = false
+    ): array {
+        $month = (
+            $monthParam &&
+            preg_match(
+                '/^\d{4}-(0[1-9]|1[0-2])$/',
+                $monthParam
+            )
+        )
+            ? Carbon::createFromFormat(
+                'Y-m',
+                $monthParam
+            )->startOfMonth()
             : now()->startOfMonth();
 
-        $gridStart = $month->copy()->startOfMonth()->startOfWeek(Carbon::MONDAY);
-        $gridEnd = $month->copy()->endOfMonth()->endOfWeek(Carbon::MONDAY);
+        $gridStart = $month
+            ->copy()
+            ->startOfMonth()
+            ->startOfWeek(
+                Carbon::MONDAY
+            );
 
-        $appointments = Appointment::with(['customer', 'service'])
-            ->where('barber_id', $barber->id)
-            ->whereBetween('date', [$gridStart->toDateString(), $gridEnd->toDateString()])
+        $gridEnd = $month
+            ->copy()
+            ->endOfMonth()
+            ->endOfWeek(
+                Carbon::MONDAY
+            );
+
+        $appointments = Appointment::with([
+            'customer',
+            'service',
+        ])
+            ->where(
+                'barber_id',
+                $barber->id
+            )
+            ->whereBetween(
+                'date',
+                [
+                    $gridStart->toDateString(),
+                    $gridEnd->toDateString(),
+                ]
+            )
             ->orderBy('time')
             ->get()
-            ->groupBy(fn (Appointment $appointment) => $appointment->date->format('Y-m-d'));
+            ->groupBy(
+                fn (Appointment $appointment) =>
+                    $appointment->date
+                        ->format('Y-m-d')
+            );
 
         $weeks = [];
         $cursor = $gridStart->copy();
@@ -119,10 +281,23 @@ class CalendarController extends Controller
 
             for ($i = 0; $i < 7; $i++) {
                 $week[] = [
-                    'date' => $cursor->copy(),
-                    'inMonth' => $cursor->month === $month->month,
-                    'isToday' => $cursor->isToday(),
-                    'appointments' => $appointments->get($cursor->format('Y-m-d'), collect()),
+                    'date' =>
+                        $cursor->copy(),
+
+                    'inMonth' =>
+                        $cursor->month ===
+                        $month->month,
+
+                    'isToday' =>
+                        $cursor->isToday(),
+
+                    'appointments' =>
+                        $appointments->get(
+                            $cursor->format(
+                                'Y-m-d'
+                            ),
+                            collect()
+                        ),
                 ];
 
                 $cursor->addDay();
@@ -132,12 +307,29 @@ class CalendarController extends Controller
         }
 
         return [
-            'barber' => $barber,
-            'month' => $month,
-            'weeks' => $weeks,
-            'prevMonth' => $month->copy()->subMonth()->format('Y-m'),
-            'nextMonth' => $month->copy()->addMonth()->format('Y-m'),
-            'readOnly' => $readOnly,
+            'barber' =>
+                $barber,
+
+            'month' =>
+                $month,
+
+            'weeks' =>
+                $weeks,
+
+            'prevMonth' =>
+                $month
+                    ->copy()
+                    ->subMonth()
+                    ->format('Y-m'),
+
+            'nextMonth' =>
+                $month
+                    ->copy()
+                    ->addMonth()
+                    ->format('Y-m'),
+
+            'readOnly' =>
+                $readOnly,
         ];
     }
 }

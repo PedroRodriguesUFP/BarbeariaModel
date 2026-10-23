@@ -1,84 +1,131 @@
 @extends('layouts.barbearia')
 
-@section('title', 'Nova marcação na agenda')
+@section('title', 'Nova Marcação — ' . $barber->name)
 
 @section('content')
-<div class="wrap">
-    <header class="page-head">
-        <h1>Nova marcação na agenda</h1>
+<div class="wrap page-body">
+    <header class="page-head animate-enter">
+        <div>
+            <p class="eyebrow">AGENDA DE {{ strtoupper($barber->name) }}</p>
+            <h1>Nova Marcação / Walk-in</h1>
+            <p class="muted">Regista uma marcação para um cliente com conta ou entrada direta na barbearia.</p>
+        </div>
+        <div class="actions">
+            <a href="{{ route('calendar.show', $barber) }}" class="btn">← Voltar ao calendário</a>
+        </div>
     </header>
 
-    <div class="page-body narrow">
-        @include('partials.messages')
+    <div class="card form-card animate-enter" style="--stagger: 1">
+        <div class="barber-pole-strip" aria-hidden="true"></div>
 
-        <div class="form-card">
-            <form action="{{ route('calendar.appointments.store') }}" method="POST">
-                @csrf
+        <form method="POST" action="{{ route('calendar.store', $barber) }}" id="walkin-appointment-form">
+            @csrf
 
-                <div class="field">
-                    <span class="hint">Cliente</span>
+            @php
+                $currentMode = old('customer_mode', 'existing');
+            @endphp
 
-                    <label class="radio-option">
-                        <input type="radio" name="client_type" value="existing" {{ old('client_type', 'existing') === 'existing' ? 'checked' : '' }}>
-                        Já tem conta
+            <fieldset class="form-fieldset">
+                <legend class="form-legend">Tipo de cliente</legend>
+                <div class="mode-toggle" role="radiogroup" aria-label="Tipo de cliente">
+                    <label class="mode-toggle__option {{ $currentMode === 'existing' ? 'is-selected' : '' }}">
+                        <input type="radio" name="customer_mode" value="existing"
+                               {{ $currentMode === 'existing' ? 'checked' : '' }}
+                               data-customer-mode-radio>
+                        <span>Já tem conta</span>
                     </label>
 
-                    <label for="customer_id" class="hint">Cliente existente</label>
-                    <select id="customer_id" name="customer_id">
-                        <option value="">Escolher cliente…</option>
-                        @foreach ($clients as $client)
-                            <option value="{{ $client->id }}" {{ (string) old('customer_id') === (string) $client->id ? 'selected' : '' }}>
-                                {{ $client->name }} — {{ $client->email }}
-                            </option>
-                        @endforeach
-                    </select>
-
-                    <label class="radio-option">
-                        <input type="radio" name="client_type" value="walk_in" {{ old('client_type') === 'walk_in' ? 'checked' : '' }}>
-                        Sem conta (walk-in)
+                    <label class="mode-toggle__option {{ $currentMode === 'walk_in' ? 'is-selected' : '' }}">
+                        <input type="radio" name="customer_mode" value="walk_in"
+                               {{ $currentMode === 'walk_in' ? 'checked' : '' }}
+                               data-customer-mode-radio>
+                        <span>Sem conta (walk-in)</span>
                     </label>
                 </div>
+                @error('customer_mode')
+                    <p class="field-error">{{ $message }}</p>
+                @enderror
+            </fieldset>
 
-                <div class="fields two">
-                    <div class="field">
-                        <label for="walk_in_name">Nome (walk-in)</label>
-                        <input id="walk_in_name" name="walk_in_name" type="text" value="{{ old('walk_in_name') }}">
-                    </div>
+            {{-- Secção: Cliente com conta --}}
+            <div id="customer-existing-fields" class="form-group" @if($currentMode !== 'existing') hidden @endif>
+                <label for="customer_id">Selecionar cliente</label>
+                <select name="customer_id" id="customer_id" @if($currentMode !== 'existing') disabled @endif>
+                    <option value="">— Escolhe um cliente registado —</option>
+                    @foreach($customers as $customer)
+                        <option value="{{ $customer->id }}" {{ (int) old('customer_id') === $customer->id ? 'selected' : '' }}>
+                            {{ $customer->name }} ({{ $customer->email }})
+                        </option>
+                    @endforeach
+                </select>
+                @error('customer_id')
+                    <p class="field-error">{{ $message }}</p>
+                @enderror
+            </div>
 
-                    <div class="field">
-                        <label for="walk_in_phone">Telefone (opcional)</label>
-                        <input id="walk_in_phone" name="walk_in_phone" type="text" value="{{ old('walk_in_phone') }}">
-                    </div>
+            {{-- Secção: Cliente Walk-in --}}
+            <div id="customer-walkin-fields" class="form-grid-2" @if($currentMode !== 'walk_in') hidden @endif>
+                <div class="form-group">
+                    <label for="walk_in_name">Nome do cliente (Walk-in)</label>
+                    <input type="text" name="walk_in_name" id="walk_in_name"
+                           value="{{ old('walk_in_name') }}"
+                           placeholder="Ex.: Manuel Ferreira"
+                           @if($currentMode !== 'walk_in') disabled @endif>
+                    @error('walk_in_name')
+                        <p class="field-error">{{ $message }}</p>
+                    @enderror
                 </div>
 
-                <p class="hint">
-                    Walk-in sem conta: depois de atendido, convida-o a criar conta —
-                    a marcação fica registada à mesma, só não está ligada a um utilizador.
-                </p>
-
-                <div class="fields two">
-                    <div class="field full">
-                        <label for="service_id">ID do serviço</label>
-                        <input id="service_id" name="service_id" type="number" min="1" value="{{ old('service_id') }}" required>
-                    </div>
-
-                    <div class="field">
-                        <label for="date">Data</label>
-                        <input id="date" name="date" type="date" value="{{ old('date') }}" required>
-                    </div>
-
-                    <div class="field">
-                        <label for="time">Hora</label>
-                        <input id="time" name="time" type="time" value="{{ old('time') }}" required>
-                    </div>
+                <div class="form-group">
+                    <label for="walk_in_phone">Telefone (opcional)</label>
+                    <input type="text" name="walk_in_phone" id="walk_in_phone"
+                           value="{{ old('walk_in_phone') }}"
+                           placeholder="Ex.: 912 345 678"
+                           @if($currentMode !== 'walk_in') disabled @endif>
+                    @error('walk_in_phone')
+                        <p class="field-error">{{ $message }}</p>
+                    @enderror
                 </div>
+            </div>
 
-                <div class="form-actions">
-                    <button class="btn" type="submit">Adicionar à agenda</button>
-                    <a class="btn ghost" href="{{ route('calendar.mine') }}">Voltar</a>
-                </div>
-            </form>
-        </div>
+            {{-- Seleção de Serviço habilitado para o barbeiro --}}
+            <div class="form-group">
+                <label for="service_id">Serviço a realizar</label>
+                <select name="service_id" id="service_id" required>
+                    <option value="">— Seleciona o serviço —</option>
+                    @foreach($services as $service)
+                        <option value="{{ $service->id }}" {{ (int) old('service_id') === $service->id ? 'selected' : '' }}>
+                            {{ $service->name }} — {{ $service->duration }} min — {{ number_format((float) $service->price, 2, ',', '.') }} €
+                        </option>
+                    @endforeach
+                </select>
+                @error('service_id')
+                    <p class="field-error">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="form-group">
+                <label for="starts_at">Data e hora de início</label>
+                <input type="datetime-local" name="starts_at" id="starts_at"
+                       value="{{ old('starts_at', now()->format('Y-m-d\TH:i')) }}" required>
+                @error('starts_at')
+                    <p class="field-error">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notas / Observações (opcional)</label>
+                <textarea name="notes" id="notes" rows="3" placeholder="Preferências de corte, observações...">{{ old('notes') }}</textarea>
+                @error('notes')
+                    <p class="field-error">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn btn-primary">Guardar marcação</button>
+                <a href="{{ route('calendar.show', $barber) }}" class="btn">Cancelar</a>
+            </div>
+        </form>
     </div>
 </div>
 @endsection
