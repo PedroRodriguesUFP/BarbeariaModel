@@ -24,7 +24,9 @@
             <h1>Pagamentos</h1>
             <p class="sub">Valores recebidos por cada marcação.</p>
         </div>
-        <a class="btn" href="{{ route('payments.create') }}">Novo pagamento</a>
+        @can('create', \App\Models\Payment::class)
+            <a class="btn" href="{{ route('payments.create') }}">Novo pagamento</a>
+        @endcan
     </header>
 
     <div class="page-body">
@@ -58,17 +60,23 @@
                             </td>
                             <td>
                                 <div class="row-actions">
-                                    <a class="link" href="{{ route('payments.show', $payment) }}">Ver</a>
-                                    <a class="link" href="{{ route('payments.edit', $payment) }}">Editar</a>
-                                    <form
-                                        action="{{ route('payments.destroy', $payment) }}"
-                                        method="POST"
-                                        onsubmit="return confirm('Eliminar este pagamento?')"
-                                    >
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="link danger" type="submit">Eliminar</button>
-                                    </form>
+                                    @can('view', $payment)
+                                        <a class="link" href="{{ route('payments.show', $payment) }}">Ver</a>
+                                    @endcan
+                                    @can('update', $payment)
+                                        <a class="link" href="{{ route('payments.edit', $payment) }}">Editar</a>
+                                    @endcan
+                                    @can('delete', $payment)
+                                        <form
+                                            action="{{ route('payments.destroy', $payment) }}"
+                                            method="POST"
+                                            onsubmit="return confirm('Eliminar este pagamento?')"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="link danger" type="submit">Eliminar</button>
+                                        </form>
+                                    @endcan
                                 </div>
                             </td>
                         </tr>

@@ -22,11 +22,6 @@
                     </div>
 
                     <div class="field">
-                        <label for="payer_id">ID do utilizador que paga</label>
-                        <input id="payer_id" name="payer_id" type="number" min="1" value="{{ old('payer_id') }}" required>
-                    </div>
-
-                    <div class="field">
                         <label for="amount">Valor (€)</label>
                         <input id="amount" name="amount" type="number" step="0.01" min="0" value="{{ old('amount') }}" required>
                     </div>

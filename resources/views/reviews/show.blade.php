@@ -10,7 +10,9 @@
             <p class="sub">{{ $review->reviewer?->name ?? '-' }}</p>
         </div>
         <div class="actions">
-            <a class="btn" href="{{ route('reviews.edit', $review) }}">Editar</a>
+            @can('update', $review)
+                <a class="btn" href="{{ route('reviews.edit', $review) }}">Editar</a>
+            @endcan
             <a class="btn ghost" href="{{ route('reviews.index') }}">Voltar</a>
         </div>
     </header>

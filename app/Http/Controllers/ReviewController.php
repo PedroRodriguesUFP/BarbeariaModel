@@ -13,6 +13,8 @@ class ReviewController extends Controller
 {
     public function index()
     {
+        $this->authorize('viewAny', Review::class);
+
         $reviews = Review::with([
             'reviewer',
             'reviewable',
@@ -26,17 +28,16 @@ class ReviewController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Review::class);
+
         return view('reviews.create');
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'reviewer_id' => [
-                'required',
-                'exists:users,id',
-            ],
+        $this->authorize('create', Review::class);
 
+        $request->validate([
             'reviewable_type' => [
                 'required',
                 Rule::in([
@@ -89,7 +90,7 @@ class ReviewController extends Controller
         }
 
         Review::create([
-            'reviewer_id' => $request->input('reviewer_id'),
+            'reviewer_id' => auth()->id(),
             'reviewable_type' => $reviewableType,
             'reviewable_id' => $request->input('reviewable_id'),
             'rating' => $request->input('rating'),
@@ -111,6 +112,8 @@ class ReviewController extends Controller
             'reviewable',
         ])->findOrFail($id);
 
+        $this->authorize('view', $review);
+
         return view(
             'reviews.show',
             compact('review')
@@ -121,6 +124,8 @@ class ReviewController extends Controller
     {
         $review = Review::findOrFail($id);
 
+        $this->authorize('update', $review);
+
         return view(
             'reviews.edit',
             compact('review')
@@ -129,12 +134,11 @@ class ReviewController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'reviewer_id' => [
-                'required',
-                'exists:users,id',
-            ],
+        $review = Review::findOrFail($id);
 
+        $this->authorize('update', $review);
+
+        $request->validate([
             'reviewable_type' => [
                 'required',
                 Rule::in([
@@ -162,8 +166,6 @@ class ReviewController extends Controller
             ],
         ]);
 
-        $review = Review::findOrFail($id);
-
         $reviewableType = $request->input('reviewable_type');
 
         $reviewable = $reviewableType::find(
@@ -187,8 +189,8 @@ class ReviewController extends Controller
             ]);
         }
 
+        // reviewer_id nunca muda: mantém-se o autor original.
         $review->update([
-            'reviewer_id' => $request->input('reviewer_id'),
             'reviewable_type' => $reviewableType,
             'reviewable_id' => $request->input('reviewable_id'),
             'rating' => $request->input('rating'),
@@ -206,6 +208,8 @@ class ReviewController extends Controller
     public function destroy($id)
     {
         $review = Review::findOrFail($id);
+
+        $this->authorize('delete', $review);
 
         $review->delete();
 

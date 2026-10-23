@@ -23,8 +23,8 @@
                     </div>
 
                     <div class="field">
-                        <label for="payer_id">ID do utilizador que paga</label>
-                        <input id="payer_id" name="payer_id" type="number" min="1" value="{{ old('payer_id', $payment->payer_id) }}" required>
+                        <label>Pagador</label>
+                        <input type="text" value="{{ $payment->payer->name ?? ('#'.$payment->payer_id) }}" disabled>
                     </div>
 
                     <div class="field">

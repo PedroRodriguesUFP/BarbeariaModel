@@ -1,71 +1,81 @@
 @extends('layouts.barbearia')
 
-@section('title', 'Calendário')
+@section('title', 'Calendário — ' . $barber->name)
 
 @section('content')
-<div class="wrap">
-    <header class="page-head">
-        <div>
-            <h1>Calendário</h1>
-            <p class="sub">
-                @if ($readOnly)
-                    Agenda de {{ $barber->name }}.
-                @else
-                    A tua agenda.
-                @endif
-            </p>
-        </div>
+@php
+    $prevMonth = (clone $currentMonth)->subMonth()->format('Y-m');$nextMonth = (clone $currentMonth)->addMonth()->format('Y-m');$weekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+@endphp
 
-        @unless ($readOnly)
-            <a class="btn" href="{{ route('calendar.appointments.create') }}">Nova marcação</a>
-        @endunless
+<div class="wrap page-body">
+    <header class="page-head animate-enter">
+        <div>
+            <p class="eyebrow">AGENDA MENSAL · BARBEIRO</p>
+            <h1>{{ $barber->name }} — {{ ucfirst($currentMonth->translatedFormat('F Y')) }}</h1>
+        </div>
+        <div class="actions">
+            <a href="{{ route('calendar.show', [$barber, 'month' =>$prevMonth]) }}" class="btn">← Mês anterior</a>
+            <a href="{{ route('calendar.show', [$barber, 'month' => now()->format('Y-m')]) }}" class="btn">Hoje</a>
+            <a href="{{ route('calendar.show', [$barber, 'month' =>$nextMonth]) }}" class="btn">Mês seguinte →</a>
+            @if(auth()->check() && (auth()->id() === $barber->id || auth()->user()->isAdmin()))
+                <a href="{{ route('calendar.create', $barber) }}" class="btn btn-primary">+ Nova Marcação / Walk-in</a>
+            @endif
+        </div>
     </header>
 
-    <div class="page-body">
-        @include('partials.messages')
+    {{-- Legenda editorial de estados --}}
+    <div class="calendar-legend card animate-enter" style="--stagger: 1" aria-label="Legenda de estados">
+        <span class="calendar-legend__title">Estados:</span>
+        <span class="calendar-legend__item"><i class="status-dot status-dot--pending"></i> Pendente</span>
+        <span class="calendar-legend__item"><i class="status-dot status-dot--confirmed"></i> Confirmada</span>
+        <span class="calendar-legend__item"><i class="status-dot status-dot--completed"></i> Concluída</span>
+        <span class="calendar-legend__item"><i class="status-dot status-dot--cancelled"></i> Cancelada</span>
+    </div>
 
-        <nav class="calendar-nav" aria-label="Navegação de mês">
-            <a
-                class="btn small ghost"
-                href="{{ $readOnly
-                    ? route('barbers.calendar', ['barber' => $barber->id, 'month' => $prevMonth])
-                    : route('calendar.mine', ['month' => $prevMonth]) }}"
-            >&larr; Mês anterior</a>
-
-            <strong class="calendar-month-label">{{ ucfirst($month->translatedFormat('F \d\e Y')) }}</strong>
-
-            <a
-                class="btn small ghost"
-                href="{{ $readOnly
-                    ? route('barbers.calendar', ['barber' => $barber->id, 'month' => $nextMonth])
-                    : route('calendar.mine', ['month' => $nextMonth]) }}"
-            >Mês seguinte &rarr;</a>
-        </nav>
-
-        <div class="calendar">
-            <div class="calendar-weekday-row">
-                <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
-            </div>
-
-            @foreach ($weeks as $week)
-                <div class="calendar-week">
-                    @foreach ($week as $day)
-                        <div class="calendar-day @if (! $day['inMonth']) is-outside @endif @if ($day['isToday']) is-today @endif">
-                            <span class="calendar-day-number">{{ $day['date']->day }}</span>
-
-                            @foreach ($day['appointments'] as $appointment)
-                                <a
-                                    class="calendar-event status-{{ $appointment->status?->value }}"
-                                    href="{{ route('appointments.show', $appointment->id) }}"
-                                >
-                                    <span class="calendar-event-time">{{ substr($appointment->time, 0, 5) }}</span>
-                                    <span class="calendar-event-name">{{ $appointment->customerDisplayName() }}</span>
-                                </a>
-                            @endforeach
-                        </div>
-                    @endforeach
-                </div>
+    <div class="calendar-board card animate-enter" style="--stagger: 2">
+        <div class="calendar-weekdays" aria-hidden="true">
+            @foreach($weekdays as$dayName)
+                <div class="calendar-weekday">{{ $dayName }}</div>
             @endforeach
+        </div>
+
+        <div class="calendar-grid">
+            @for($day = (clone $startGrid);$day->lte($endGrid);$day->addDay())
+                @php
+                    $dateKey = $day->format('Y-m-d');$isCurrentMonth = $day->month ===$currentMonth->month;
+                    $isToday = $day->isToday();$dayAppointments = $appointmentsByDate[$dateKey] ?? collect();
+                @endphp
+
+                <div class="calendar-cell {{ !$isCurrentMonth ? 'is-outside' : '' }} {{ $isToday ? 'is-today' : '' }} {{ $dayAppointments->isEmpty() ? 'is-empty' : '' }}">
+                    <div class="calendar-cell__header">
+                        <span class="calendar-cell__dayname">{{ $day->translatedFormat('D') }}</span>
+                        <span class="calendar-cell__number">
+                            {{ $day->format('d') }}
+                            @if($isToday)
+                                <span class="today-marker" title="Hoje">Hoje</span>
+                            @endif
+                        </span>
+                    </div>
+
+                    <div class="calendar-cell__events">
+                        @forelse($dayAppointments as$appointment)
+                            <a href="{{ route('appointments.show', $appointment) }}"
+                               class="calendar-event calendar-event--{{ $appointment->status->value }}">
+                                <div class="calendar-event__top">
+                                    <span class="calendar-event__time">{{ $appointment->starts_at->format('H:i') }}</span>
+                                    <span class="status-dot status-dot--{{ $appointment->status->value }}" aria-hidden="true"></span>
+                                </div>
+                                <div class="calendar-event__client">{{ $appointment->customerDisplayName() }}</div>
+                                @if($appointment->service)
+                                    <div class="calendar-event__service">{{ $appointment->service->name }}</div>
+                                @endif
+                            </a>
+                        @empty
+                            <span class="calendar-cell__none">Sem marcações</span>
+                        @endforelse
+                    </div>
+                </div>
+            @endfor
         </div>
     </div>
 </div>
