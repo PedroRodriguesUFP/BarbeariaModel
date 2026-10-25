@@ -17,7 +17,7 @@
 
     @if($services->isEmpty())
         <div class="card">
-            <p class="muted">Ainda não tens serviços associados ao teu perfil.</p>
+            <p class="muted">Ainda não tens servicos associados ao teu perfil.</p>
         </div>
     @else
         <div class="barber-cards-grid">
