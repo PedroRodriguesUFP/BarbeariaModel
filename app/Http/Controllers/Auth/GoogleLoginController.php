@@ -68,7 +68,7 @@ class GoogleLoginController extends Controller
         request()->session()->regenerate();
 
         return redirect()->intended(
-            route('home')
+            route($user->homeRoute())
         );
     }
 }

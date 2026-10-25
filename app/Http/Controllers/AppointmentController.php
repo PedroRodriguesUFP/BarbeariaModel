@@ -42,7 +42,7 @@ class AppointmentController extends Controller
     {
         $this->authorize('create', Appointment::class);
 
-        return view('appointments.create');
+        return view('appointments.create', $this->formData());
     }
 
     public function store(Request $request)
@@ -94,10 +94,25 @@ class AppointmentController extends Controller
             ]);
         }
 
+        // Cliente marca para si. Admin escolhe o cliente.
+        $customerId = $request->user()->id;
+
+        if ($request->user()->isAdmin()) {
+            $customerId = $request->validate([
+                'customer_id' => [
+                    'required',
+                    Rule::exists('users', 'id')->where(
+                        'role',
+                        UserRole::Client->value
+                    ),
+                ],
+            ])['customer_id'];
+        }
+
         Appointment::create([
             'date' => $request->input('date'),
             'time' => $request->input('time'),
-            'customer_id' => $request->user()->id,
+            'customer_id' => $customerId,
             'service_id' => $service->id,
             'barber_id' => $barber->id,
         ]);
@@ -108,6 +123,23 @@ class AppointmentController extends Controller
                 'success',
                 'Marcação criada com sucesso.'
             );
+    }
+
+    // Listas usadas nos <select> de create/edit.
+    private function formData(): array
+    {
+        return [
+            'barbers' => User::where('role', UserRole::Barber->value)
+                ->where('active', true)
+                ->with('services')
+                ->orderBy('name')
+                ->get(),
+            'services' => Service::orderBy('name')->get(),
+            'customers' => User::where('role', UserRole::Client->value)
+                ->where('active', true)
+                ->orderBy('name')
+                ->get(),
+        ];
     }
 
     public function show($id)
@@ -134,7 +166,7 @@ class AppointmentController extends Controller
 
         return view(
             'appointments.edit',
-            compact('appointment')
+            $this->formData() + compact('appointment')
         );
     }
 

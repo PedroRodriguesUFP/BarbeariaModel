@@ -12,7 +12,17 @@
                 Escolha o serviço e reserve o seu lugar em menos de um minuto.
             </p>
             <div class="actions">
-                <a class="btn" href="{{ route('appointments.create') }}">Marcar horário</a>
+                @guest
+                    <a class="btn" href="{{ route('login') }}">Entrar para marcar</a>
+                @else
+                    @if (auth()->user()->isClient())
+                        <a class="btn" href="{{ route('appointments.create') }}">Marcar horário</a>
+                    @elseif (auth()->user()->isBarber())
+                        <a class="btn" href="{{ route('calendar.mine') }}">Abrir calendário</a>
+                    @else
+                        <a class="btn" href="{{ route('admin.dashboard') }}">Abrir painel</a>
+                    @endif
+                @endguest
                 <a class="btn ghost" href="#servicos">Ver serviços</a>
             </div>
         </div>

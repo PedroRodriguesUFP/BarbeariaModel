@@ -31,6 +31,8 @@
         rel="stylesheet"
         href="{{ asset('css/barbearia.css') }}"
     >
+
+    @stack('head')
 </head>
 
 <body>
@@ -49,75 +51,44 @@
                 {{ config('app.name', 'Barbearia') }}
             </a>
 
+            @php
+                $u = auth()->user();
+                $links = [];
+
+                // Visitante
+                $links[] = ['Serviços', route('services.index'), 'services.*'];
+
+                if ($u?->isClient()) {
+                    $links[] = ['Marcações', route('appointments.index'), 'appointments.*'];
+                    $links[] = ['Pagamentos', route('payments.index'), 'payments.*'];
+                    $links[] = ['Avaliações', route('reviews.index'), 'reviews.*'];
+                } elseif ($u?->isBarber()) {
+                    $links[] = ['Calendário', route('calendar.mine'), 'calendar.*'];
+                    $links[] = ['Marcações', route('appointments.index'), 'appointments.*'];
+                } elseif ($u?->isAdmin()) {
+                    $links = [
+                        ['Painel', route('admin.dashboard'), 'admin.dashboard'],
+                        ['Barbeiros', route('admin.barbers.index'), 'admin.barbers.*'],
+                        ['Contas', route('admin.users.index'), 'admin.users.*'],
+                        ['Serviços', route('services.index'), 'services.*'],
+                        ['Marcações', route('appointments.index'), 'appointments.*'],
+                        ['Pagamentos', route('payments.index'), 'payments.*'],
+                        ['Avaliações', route('reviews.index'), 'reviews.*'],
+                    ];
+                }
+            @endphp
+
             <nav aria-label="Principal">
-
-                <a
-                    href="{{ route('services.index') }}"
-                    @if (request()->routeIs('services.*'))
-                        aria-current="page"
-                    @endif
-                >
-                    Serviços
-                </a>
-
-                @auth
-
+                @foreach ($links as [$label, $url, $pattern])
                     <a
-                        href="{{ route('appointments.index') }}"
-                        @if (request()->routeIs('appointments.*'))
+                        href="{{ $url }}"
+                        @if (request()->routeIs($pattern))
                             aria-current="page"
                         @endif
                     >
-                        Marcações
+                        {{ $label }}
                     </a>
-
-                    <a
-                        href="{{ route('payments.index') }}"
-                        @if (request()->routeIs('payments.*'))
-                            aria-current="page"
-                        @endif
-                    >
-                        Pagamentos
-                    </a>
-
-                    <a
-                        href="{{ route('reviews.index') }}"
-                        @if (request()->routeIs('reviews.*'))
-                            aria-current="page"
-                        @endif
-                    >
-                        Avaliações
-                    </a>
-
-
-                    {{-- BARBEIRO --}}
-                    @if (auth()->user()->isBarber())
-
-                        <a
-                            href="{{ route('calendar.mine') }}"
-                            @if (request()->routeIs('calendar.*'))
-                                aria-current="page"
-                            @endif
-                        >
-                            Calendário
-                        </a>
-
-                    {{-- ADMIN --}}
-                    @elseif (auth()->user()->isAdmin())
-
-                        <a
-                            href="{{ route('barbers.index') }}"
-                            @if (request()->routeIs('barbers.*'))
-                                aria-current="page"
-                            @endif
-                        >
-                            Barbeiros
-                        </a>
-
-                    @endif
-
-                @endauth
-
+                @endforeach
             </nav>
 
 
@@ -303,7 +274,7 @@
             {{-- CLIENTE --}}
             @auth
 
-                @if (auth()->user()->isClient())
+                @if (auth()->user()->isClient() || auth()->user()->isAdmin())
 
                     <a href="{{ route('appointments.create') }}">
                         Marcar horário
@@ -340,7 +311,7 @@
     @auth
 
         @if (
-            auth()->user()->isClient() &&
+            (auth()->user()->isClient() || auth()->user()->isAdmin()) &&
             ! request()->routeIs('appointments.create')
         )
 
