@@ -24,11 +24,11 @@
             @foreach($services as $index => $service)
                 <article class="card animate-enter" data-tilt style="--stagger: {{ ($index % 6) + 1 }}">
                     <div class="row-actions" style="justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span class="badge">{{ $service->category->value ?? $service->category }}</span>
+                        <span class="badge">{{ $service->category->value }}</span>
                         <strong>{{ number_format((float) $service->price, 2, ',', '.') }} €</strong>
                     </div>
                     <h2 class="lift">{{ $service->name }}</h2>
-                    <p class="muted" style="margin: 0.35rem 0 0.75rem;">Duração: <strong>{{ $service->duration }} min</strong></p>
+                    <p class="muted" style="margin: 0.35rem 0 0.75rem;">Duração: <strong>{{ $service->duration_minutes }} min</strong></p>
                     @if($service->description)
                         <p>{{ $service->description }}</p>
                     @endif
