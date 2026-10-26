@@ -1,0 +1,86 @@
+/* Área de administração — usa as variáveis de barbearia.css */
+
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.kpi {
+    background: var(--card);
+    border: 2px solid var(--ink);
+    padding: 1rem 1.1rem;
+    box-shadow: 0 4px 0 var(--ink);
+}
+
+.kpi .label { color: var(--steel); font-size: 0.9rem; font-weight: 500; }
+
+.kpi .value {
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.kpi.accent .value { color: var(--red); }
+
+.charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.chart-card {
+    background: var(--card);
+    border: 2px solid var(--ink);
+    padding: 1.1rem 1.25rem 1.25rem;
+    min-width: 0;
+}
+
+.chart-card.wide { grid-column: 1 / -1; }
+.chart-card h2 { margin: 0 0 0.75rem; font-size: 1.1rem; }
+.chart-box { position: relative; height: 16rem; }
+.chart-card.wide .chart-box { height: 18rem; }
+.chart-empty { color: var(--steel); margin: 2rem 0; text-align: center; }
+
+.section-title { font-size: 1.3rem; margin: 2rem 0 1rem; }
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 1.25rem;
+}
+
+.filters .field { min-width: 11rem; }
+
+.checks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 0.5rem 1rem;
+}
+
+.checks label {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-weight: 500;
+}
+
+.checks input { width: auto; }
+
+/* select de role dentro da tabela */
+.inline-select {
+    font: inherit;
+    padding: 0.3rem 0.5rem;
+    background: var(--card);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+}
+
+.badge-active { }
+.badge-inactive { }

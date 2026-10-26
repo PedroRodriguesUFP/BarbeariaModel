@@ -13,6 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
 
+    // Utilizador já autenticado que abre /login vai para a sua área.
+    $middleware->redirectUsersTo(
+        fn (Request $request) => route($request->user()->homeRoute())
+    );
+
     $middleware->alias([
         'role' => \App\Http\Middleware\RoleMiddleware::class,
     ]);

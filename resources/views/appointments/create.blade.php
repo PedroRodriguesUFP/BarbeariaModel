@@ -15,28 +15,7 @@
             <form action="{{ route('appointments.store') }}" method="POST">
                 @csrf
 
-                <div class="fields two">
-
-                    <div class="field">
-                        <label for="barber_id">ID do barbeiro</label>
-                        <input id="barber_id" name="barber_id" type="number" min="1" value="{{ old('barber_id') }}" required>
-                    </div>
-
-                    <div class="field full">
-                        <label for="service_id">ID do serviço</label>
-                        <input id="service_id" name="service_id" type="number" min="1" value="{{ old('service_id') }}" required>
-                    </div>
-
-                    <div class="field">
-                        <label for="date">Data</label>
-                        <input id="date" name="date" type="date" value="{{ old('date') }}" required>
-                    </div>
-
-                    <div class="field">
-                        <label for="time">Hora</label>
-                        <input id="time" name="time" type="time" value="{{ old('time') }}" required>
-                    </div>
-                </div>
+                @include('appointments._fields')
 
                 <div class="form-actions">
                     <button class="btn" type="submit">Criar marcação</button>

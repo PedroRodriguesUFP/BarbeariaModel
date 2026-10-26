@@ -32,7 +32,7 @@ class LoginController extends Controller
             $request->session()->regenerate();
 
             return redirect()->intended(
-                route('home')
+                route($request->user()->homeRoute())
             );
         }
 

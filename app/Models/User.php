@@ -56,6 +56,16 @@ class User extends Authenticatable
         return $this->role === UserRole::Client;
     }
 
+    // Nome da rota para onde o utilizador vai depois de entrar.
+    public function homeRoute(): string
+    {
+        return match ($this->role) {
+            UserRole::Admin => 'admin.dashboard',
+            UserRole::Barber => 'calendar.mine',
+            default => 'appointments.index',
+        };
+    }
+
     public function hasRole(UserRole $role): bool
     {
         return $this->role === $role;
