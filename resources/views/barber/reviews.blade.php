@@ -42,10 +42,7 @@
                     </div>
                     <p style="margin: 0.85rem 0;">{{ $review->comment ?: 'Sem comentário escrito.' }}</p>
                     <div class="muted" style="font-size: 0.85rem;">
-                        <strong>Cliente:</strong> {{ $review->user?->name ?? 'Cliente' }}
-                        @if($review->reviewable instanceof \App\Models\Appointment && $review->reviewable->service)
-                            · <strong>Serviço:</strong> {{ $review->reviewable->service->name }}
-                        @endif
+                        <strong>Cliente:</strong> {{ $review->reviewer?->name ?? 'Cliente' }}
                     </div>
                 </article>
             @endforeach

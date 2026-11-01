@@ -9,12 +9,12 @@
     <header class="page-head barber-dash-head animate-enter">
         <div>
             <p class="eyebrow">ÁREA DE TRABALHO · {{ now()->translatedFormat('d \d\e F, Y') }}</p>
-            <h1>{{ $greeting }}, {{$barber->name }}</h1>
+            <h1>{{ $greeting }}, {{ $barber->name }}</h1>
             <p class="muted">Aqui tens a tua agenda e o estado do dia.</p>
         </div>
         <div class="actions">
-            <a href="{{ route('calendar.show', $barber) }}" class="btn">Ver calendário</a>
-            <a href="{{ route('calendar.create', $barber) }}" class="btn btn-primary">+ Adicionar marcação</a>
+            <a href="{{ route('calendar.mine') }}" class="btn">Ver calendário</a>
+            <a href="{{ route('calendar.appointments.create') }}" class="btn btn-primary">+ Adicionar marcação</a>
         </div>
     </header>
 
@@ -61,8 +61,18 @@
 
                 @if($nextAppointment)
                     <div class="next-appointment-card__time lift-far">
-                        {{ $nextAppointment->starts_at->format('H:i') }}
-                        <small>{{ $nextAppointment->starts_at->isToday() ? 'Hoje' :$nextAppointment->starts_at->format('d/m') }}</small>
+                        @if($nextAppointment->time)
+                            {{ substr($nextAppointment->time, 0, 5) }}
+                        @else
+                            --:--
+                        @endif
+                        <small>
+                            @if($nextAppointment->date->isToday())
+                                Hoje
+                            @else
+                                {{ $nextAppointment->date->format('d/m') }}
+                            @endif
+                        </small>
                     </div>
 
                     <h2 class="next-appointment-card__client lift">
@@ -75,11 +85,11 @@
                     <dl class="detail next-appointment-card__details">
                         <div>
                             <dt>Serviço</dt>
-                            <dd>{{ $nextAppointment->service?->name ?? 'Serviço' }}</dd>
+                            <dd>{{ $nextAppointment->service->name }}</dd>
                         </div>
                         <div>
                             <dt>Duração</dt>
-                            <dd>{{ $nextAppointment->service?->duration ?? 30 }} min</dd>
+                            <dd>{{ $nextAppointment->service->duration_minutes }} min</dd>
                         </div>
                     </dl>
 
@@ -93,7 +103,7 @@
                         <p><strong>Sem próximas marcações agendadas.</strong></p>
                         <p class="muted">Podes registar um cliente walk-in ou consultar o calendário mensal.</p>
                         <div class="actions">
-                            <a href="{{ route('calendar.create', $barber) }}" class="btn btn-primary">+ Registar Walk-in</a>
+                            <a href="{{ route('calendar.appointments.create') }}" class="btn btn-primary">+ Registar Walk-in</a>
                         </div>
                     </div>
                 @endif
@@ -105,7 +115,13 @@
             <div class="card agenda-panel">
                 <header class="agenda-panel__head">
                     <h2>Agenda de hoje</h2>
-                    <span class="badge">{{ $todayAppointments->count() }} {{$todayAppointments->count() === 1 ? 'marcação' : 'marcações' }}</span>
+                    <span class="badge">
+                        @if($todayAppointments->count() === 1)
+                            1 marcação
+                        @else
+                            {{ $todayAppointments->count() }} marcações
+                        @endif
+                    </span>
                 </header>
 
                 @if($todayAppointments->isEmpty())
@@ -114,10 +130,14 @@
                     </div>
                 @else
                     <ol class="barber-timeline">
-                        @foreach($todayAppointments as$appt)
+                        @foreach($todayAppointments as $appt)
                             <li class="barber-timeline__item status--{{ $appt->status->value }}">
                                 <div class="barber-timeline__time">
-                                    {{ $appt->starts_at->format('H:i') }}
+                                    @if($appt->time)
+                                        {{ substr($appt->time, 0, 5) }}
+                                    @else
+                                        --:--
+                                    @endif
                                 </div>
                                 <div class="barber-timeline__marker" aria-hidden="true"></div>
                                 <a href="{{ route('appointments.show', $appt) }}" class="barber-timeline__content">
@@ -130,18 +150,20 @@
                                             @endif
                                         </strong>
                                         <span class="badge badge--{{ $appt->status->value }}">
-                                            @switch($appt->status->value)
-                                                @case('pending') Pendente @break
-                                                @case('confirmed') Confirmada @break
-                                                @case('completed') Concluída @break
-                                                @case('cancelled') Cancelada @break
-                                                @default {{ $appt->status->value }}
-                                            @endswitch
+                                            @if($appt->isPending())
+                                                Pendente
+                                            @elseif($appt->isConfirmed())
+                                                Confirmada
+                                            @elseif($appt->isCompleted())
+                                                Concluída
+                                            @else
+                                                Cancelada
+                                            @endif
                                         </span>
                                     </div>
                                     <div class="barber-timeline__sub">
-                                        <span>{{ $appt->service?->name ?? 'Serviço' }}</span>
-                                        <span>· {{ $appt->service?->duration ?? 30 }} min</span>
+                                        <span>{{ $appt->service->name }}</span>
+                                        <span>· {{ $appt->service->duration_minutes }} min</span>
                                     </div>
                                 </a>
                             </li>
