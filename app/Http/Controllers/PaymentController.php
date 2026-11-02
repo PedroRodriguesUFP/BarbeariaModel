@@ -237,48 +237,56 @@ class PaymentController extends Controller
             );
     }
 
-    // Mantemos o checkout Stripe que já existia.
-    public function checkout(int $serviceId)
+       public function checkout(Appointment $appointment)
     {
-        $service = Service::findOrFail($serviceId);
+        $this->authorize('view', $appointment);
 
-        Stripe::setApiKey(
-            config('services.stripe.secret')
-        );
+        try {
+            Stripe::setApiKey(config('services.stripe.secret'));
 
-        $session = Session::create([
-            'payment_method_types' => [
-                'card',
-            ],
-
-            'line_items' => [
-                [
+            $session = Session::create([
+                'payment_method_types' => ['card'],
+                'line_items' => [[
                     'price_data' => [
                         'currency' => 'eur',
-
                         'product_data' => [
-                            'name' => $service->name,
+                            'name' => 'Marcação #' . $appointment->id . ' - ' . $appointment->service->name,
                         ],
-
-                        'unit_amount' =>
-                            (int) ($service->price * 100),
+                        'unit_amount' => (int) ($appointment->service->price * 100),
                     ],
-
                     'quantity' => 1,
-                ],
-            ],
+                ]],
+                'mode' => 'payment',
+                'success_url' => route('payments.success', ['appointment' => $appointment->id]) . '&session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('payments.cancel', ['appointment' => $appointment->id]),
+            ]);
 
-            'mode' => 'payment',
+            return redirect()->away($session->url);
 
-            'success_url' =>
-                route('services.index')
-                . '?payment=success',
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Erro Stripe: ' . $e->getMessage());
+            return back()->with('error', 'Serviço de pagamento indisponível.');
+        }
+    }
 
-            'cancel_url' =>
-                route('services.index')
-                . '?payment=cancelled',
+    public function success(Request $request)
+    {
+        $appointment = Appointment::with('service')->findOrFail($request->query('appointment'));
+
+        Payment::create([
+            'appointment_id' => $appointment->id,
+            'payer_id' => auth()->id(),
+            'amount' => $appointment->service->price,
+            'method' => 'card',
+            'status' => 'paid',
+            'paid_at' => now(),
         ]);
 
-        return redirect($session->url);
+        return redirect()->route('payments.index')->with('success', 'Pagamento concluído com sucesso!');
+    }
+
+        public function cancel()
+    {
+        return redirect()->route('payments.index')->with('error', 'O pagamento foi cancelado.');
     }
 }

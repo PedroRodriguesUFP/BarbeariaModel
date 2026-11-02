@@ -166,3 +166,25 @@ test('admin can view and manage any payment', function () {
 
     $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
 });
+test('client is redirected to stripe checkout and success creates payment', function () {
+    $client = User::factory()->client()->create();
+    $appointment = makeAppointmentFor($client);
+
+    // Testar redirecionamento
+    $response = $this->actingAs($client)
+                     ->post(route('payments.checkout', $appointment));
+
+    $response->assertStatus(303); // Redirecionamento externo do Stripe
+
+    // Testar callback de sucesso
+    $this->actingAs($client)
+         ->get(route('payments.success', ['appointment' => $appointment->id, 'session_id' => 'cs_test_123']))
+         ->assertRedirect(route('payments.index'))
+         ->assertSessionHas('success');
+
+    $this->assertDatabaseHas('payments', [
+        'appointment_id' => $appointment->id,
+        'payer_id' => $client->id,
+        'status' => 'paid',
+    ]);
+});

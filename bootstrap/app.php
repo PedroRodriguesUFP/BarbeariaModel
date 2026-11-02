@@ -18,13 +18,17 @@ return Application::configure(basePath: dirname(__DIR__))
         fn (Request $request) => route($request->user()->homeRoute())
     );
 
-    $middleware->alias([
+        $middleware->alias([
         'role' => \App\Http\Middleware\RoleMiddleware::class,
     ]);
 
+    $middleware->validateCsrfTokens(except: [
+        'api/stripe/webhook', // Ignorar CSRF nesta rota
+    ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();
+    

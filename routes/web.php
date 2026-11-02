@@ -67,9 +67,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
     Route::resource('appointments', AppointmentController::class);
 
+    Route::post('/payments/{appointment}/checkout', [PaymentController::class, 'checkout'])->name('payments.checkout');
+    Route::get('/payments/success', [PaymentController::class, 'success'])->name('payments.success');
+    Route::get('/payments/cancel', [PaymentController::class, 'cancel'])->name('payments.cancel');
+
     Route::resource('payments', PaymentController::class);
     Route::resource('reviews', ReviewController::class);
-    Route::get('/checkout/{serviceId}', [PaymentController::class, 'checkout'])->name('checkout');
 
     // ---------------- BARBEIRO ----------------
     Route::middleware('role:barber')->group(function () {
