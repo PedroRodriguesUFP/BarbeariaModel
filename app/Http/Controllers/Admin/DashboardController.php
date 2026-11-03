@@ -7,133 +7,138 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Payment;
+use App\Models\Service;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    /**
+     * Reúne todos os indicadores (KPIs) e dados estatísticos 
+     * para alimentar o painel de controlo da administração.
+     */
     public function index()
     {
+        // 1. Preparação de Datas Base
         $today = Carbon::today();
         $monthStart = $today->copy()->startOfMonth();
+        $thirtyDaysAgo = $today->copy()->subDays(29);
 
-        // ---------- KPIs ----------
-        $paid = Payment::where('status', 'paid');
+        // ---------------------------------------------------------
+        // KPIs Principais (Indicadores de Performance)
+        // ---------------------------------------------------------
+        
+        // Faturação
+        $paidPayments = Payment::where('status', 'paid');
+        $revenueTotal = (clone $paidPayments)->sum('amount');
+        $revenueMonth = (clone $paidPayments)->where('paid_at', '>=', $monthStart)->sum('amount');
 
-        $last30 = DB::table('appointments')
-            ->where('date', '>=', $today->copy()->subDays(29)->toDateString())
-            ->where('date', '<=', $today->toDateString())
-            ->count();
-
-        $cancelled30 = DB::table('appointments')
-            ->where('date', '>=', $today->copy()->subDays(29)->toDateString())
-            ->where('date', '<=', $today->toDateString())
-            ->where('status', Status::Cancelled->value)
-            ->count();
+        // Volume de Marcações (Últimos 30 dias para a taxa de cancelamento)
+        $appointmentsLast30Days = Appointment::where('date', '>=', $thirtyDaysAgo->toDateString())
+            ->where('date', '<=', $today->toDateString());
+            
+        $totalLast30 = (clone $appointmentsLast30Days)->count();
+        $cancelledLast30 = (clone $appointmentsLast30Days)->where('status', Status::Cancelled->value)->count();
 
         $kpis = [
-            'revenueMonth' => (float) (clone $paid)
-                ->where('paid_at', '>=', $monthStart)
-                ->sum('amount'),
-            'revenueTotal' => (float) (clone $paid)->sum('amount'),
-            'appointmentsMonth' => DB::table('appointments')
-                ->where('date', '>=', $monthStart->toDateString())
-                ->count(),
-            'appointmentsToday' => DB::table('appointments')
-                ->where('date', $today->toDateString())
-                ->count(),
-            'clients' => User::where('role', UserRole::Client->value)
-                ->where('active', true)
-                ->count(),
-            'barbers' => User::where('role', UserRole::Barber->value)
-                ->where('active', true)
-                ->count(),
-            'cancelRate' => $last30 > 0
-                ? round($cancelled30 / $last30 * 100)
-                : 0,
+            'revenueMonth'      => (float) $revenueMonth,
+            'revenueTotal'      => (float) $revenueTotal,
+            'appointmentsMonth' => Appointment::where('date', '>=', $monthStart->toDateString())->count(),
+            'appointmentsToday' => Appointment::where('date', $today->toDateString())->count(),
+            'clients'           => User::where('role', UserRole::Client->value)->where('active', true)->count(),
+            'barbers'           => User::where('role', UserRole::Barber->value)->where('active', true)->count(),
+            // Evita divisão por zero caso seja uma plataforma recém-estreada
+            'cancelRate'        => $totalLast30 > 0 ? round(($cancelledLast30 / $totalLast30) * 100) : 0,
         ];
 
-        // ---------- Gráfico: marcações por dia (30 dias) ----------
-        $perDayRaw = Appointment::where('date', '>=', $today->copy()->subDays(29)->toDateString())
+        // ---------------------------------------------------------
+        // Dados para Gráficos
+        // ---------------------------------------------------------
+
+        // 1. Evolução Diária (Últimos 30 dias)
+        // Agrupamos na base de dados para ser mais rápido (boa prática em BDAD)
+        $perDayRaw = Appointment::where('date', '>=', $thirtyDaysAgo->toDateString())
             ->where('date', '<=', $today->toDateString())
-            ->get(['date'])
-            ->countBy(fn ($a) => $a->date->format('Y-m-d'));
+            ->select('date', DB::raw('count(*) as total'))
+            ->groupBy('date')
+            ->pluck('total', 'date')
+            ->toArray();
 
         $days = [];
         $perDay = [];
+        
+        // Preencher o array garantindo que os dias sem marcações aparecem a zero
         for ($i = 29; $i >= 0; $i--) {
-            $d = $today->copy()->subDays($i);
-            $days[] = $d->format('d/m');
-            $perDay[] = $perDayRaw[$d->format('Y-m-d')] ?? 0;
+            $currentDay = $today->copy()->subDays($i);
+            $days[] = $currentDay->format('d/m');
+            $perDay[] = $perDayRaw[$currentDay->format('Y-m-d')] ?? 0;
         }
 
-        // ---------- Gráfico: receita por mês (6 meses) ----------
+        // 2. Receita Mensal (Últimos 6 meses)
         $sixMonthsAgo = $today->copy()->startOfMonth()->subMonths(5);
-
         $revenueRaw = Payment::where('status', 'paid')
             ->where('paid_at', '>=', $sixMonthsAgo)
             ->get(['amount', 'paid_at'])
-            ->groupBy(fn ($p) => $p->paid_at->format('Y-m'))
-            ->map(fn ($g) => (float) $g->sum('amount'));
+            ->groupBy(fn ($payment) => $payment->paid_at->format('Y-m'))
+            ->map(fn ($group) => (float) $group->sum('amount'));
 
         $months = [];
         $revenue = [];
         for ($i = 0; $i < 6; $i++) {
-            $m = $sixMonthsAgo->copy()->addMonths($i);
-            $months[] = $m->format('m/Y');
-            $revenue[] = round($revenueRaw[$m->format('Y-m')] ?? 0, 2);
+            $currentMonth = $sixMonthsAgo->copy()->addMonths($i);
+            $months[] = $currentMonth->format('m/Y');
+            $revenue[] = round($revenueRaw[$currentMonth->format('Y-m')] ?? 0, 2);
         }
 
-        // ---------- Gráfico: marcações por barbeiro ----------
+        // 3. Performance dos Barbeiros (Marcações não canceladas)
         $barbers = User::where('role', UserRole::Barber->value)
             ->withCount([
-                'appointmentsAsBarber as total' => fn ($q) => $q->where('status', '!=', Status::Cancelled->value),
+                'appointmentsAsBarber as total' => fn ($query) => $query->where('status', '!=', Status::Cancelled->value),
             ])
             ->orderByDesc('total')
             ->get();
 
-        // ---------- Gráfico: serviços mais pedidos ----------
-        $topServices = DB::table('appointments')
-            ->join('services', 'services.id', '=', 'appointments.service_id')
-            ->where('appointments.status', '!=', Status::Cancelled->value)
-            ->select('services.name', DB::raw('count(*) as total'))
-            ->groupBy('services.id', 'services.name')
+        // 4. Top 5 Serviços mais procurados (Substituído DB facade por Eloquent puro)
+        $topServices = Service::withCount([
+                'appointments as total' => fn ($query) => $query->where('status', '!=', Status::Cancelled->value)
+            ])
             ->orderByDesc('total')
             ->limit(5)
             ->get();
 
-        // ---------- Gráfico: estados ----------
-        $byStatus = DB::table('appointments')
-            ->select('status', DB::raw('count(*) as total'))
+        // 5. Distribuição de Estados
+        $byStatus = Appointment::select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');
 
         $statusLabels = [
-            'pending' => 'Pendentes',
-            'confirmed' => 'Confirmadas',
-            'completed' => 'Concluídas',
-            'cancelled' => 'Canceladas',
+            Status::Pending->value   => 'Pendentes',
+            Status::Confirmed->value => 'Confirmadas',
+            Status::Completed->value => 'Concluídas',
+            Status::Cancelled->value => 'Canceladas',
         ];
 
         $charts = [
-            'perDay' => ['labels' => $days, 'data' => $perDay],
-            'revenue' => ['labels' => $months, 'data' => $revenue],
-            'barbers' => [
+            'perDay'   => ['labels' => $days, 'data' => $perDay],
+            'revenue'  => ['labels' => $months, 'data' => $revenue],
+            'barbers'  => [
                 'labels' => $barbers->pluck('name')->all(),
-                'data' => $barbers->pluck('total')->all(),
+                'data'   => $barbers->pluck('total')->all(),
             ],
             'services' => [
                 'labels' => $topServices->pluck('name')->all(),
-                'data' => $topServices->pluck('total')->all(),
+                'data'   => $topServices->pluck('total')->all(),
             ],
-            'status' => [
+            'status'   => [
                 'labels' => array_values($statusLabels),
-                'data' => array_map(fn ($k) => (int) ($byStatus[$k] ?? 0), array_keys($statusLabels)),
+                'data'   => array_map(fn ($statusKey) => (int) ($byStatus[$statusKey] ?? 0), array_keys($statusLabels)),
             ],
         ];
 
-        // ---------- Próximas marcações ----------
+        // ---------------------------------------------------------
+        // Agenda Futura (Próximas 6 marcações ativas)
+        // ---------------------------------------------------------
         $upcoming = Appointment::with(['customer', 'barber', 'service'])
             ->where('date', '>=', $today->toDateString())
             ->whereIn('status', [Status::Pending->value, Status::Confirmed->value])
