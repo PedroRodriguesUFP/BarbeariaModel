@@ -1,0 +1,127 @@
+# Execução real — 2026-11-01T11:00Z
+PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
+# comando: ./run_all.sh barbearia   (dropdb/createdb + 01 + 02 + 03 + 04, ON_ERROR_STOP=1)
+
+ id |   barbeiro   | media | n_avaliacoes | n_comentarios 
+----+--------------+-------+--------------+---------------
+  2 | Tiago Costa  |  4.75 |            4 |             2
+  3 | Miguel Sousa |  4.50 |            2 |             1
+  4 | Rui Barbosa  |  3.50 |            2 |             1
+(3 rows)
+
+ id |   barbeiro   | servicos_concluidos | horas_trabalhadas 
+----+--------------+---------------------+-------------------
+  2 | Tiago Costa  |                   5 |              3.67
+  3 | Miguel Sousa |                   3 |              1.67
+  4 | Rui Barbosa  |                   3 |              1.50
+(3 rows)
+
+      plano      | adesoes_ativas | total_subscricoes_ativas 
+-----------------+----------------+--------------------------
+ Plano Essencial |              3 |                        4
+ Plano Premium   |              1 |                        4
+(2 rows)
+
+ id |     cliente     |      plano      | quota | cortes_usados | cortes_disponiveis 
+----+-----------------+-----------------+-------+---------------+--------------------
+  5 | João Silva      | Plano Premium   |     4 |             4 |                  0
+  6 | Rafael Ferreira | Plano Essencial |     2 |             2 |                  0
+  7 | André Martins   | Plano Essencial |     2 |             1 |                  1
+ 12 | Inês Lopes      | Plano Essencial |     2 |             0 |                  2
+(4 rows)
+
+   origem    | n_pagamentos | receita 
+-------------+--------------+---------
+ avulso      |            6 |   88.00
+ mensalidade |            3 |   74.70
+(2 rows)
+
+   categoria    |    servico     | n_requisicoes 
+----------------+----------------+---------------
+ beard          | Aparar barba   |             4
+ coloring       | Coloração      |             2
+ fade           | Fade           |             7
+ hair           | Corte clássico |            10
+ hair and beard | Corte e barba  |             4
+(5 rows)
+
+   barbeiro   |   hora   |    cliente     |    servico     
+--------------+----------+----------------+----------------
+ Miguel Sousa | 10:00:00 | Sofia Almeida  | Aparar barba
+ Tiago Costa  | 10:00:00 | Marta Ferreira | Fade
+ Tiago Costa  | 11:00:00 | Carla Mendes   | Corte clássico
+ Tiago Costa  | 15:00:00 | Inês Lopes     | Corte e barba
+(4 rows)
+
+   mes   | total_marcacoes | canceladas | taxa_cancelamento_pct 
+---------+-----------------+------------+-----------------------
+ 2026-09 |              12 |          1 |                   8.3
+ 2026-10 |              18 |          2 |                  11.1
+ 2026-11 |               2 |          0 |                   0.0
+(3 rows)
+
+BEGIN
+CREATE TABLE
+CREATE FUNCTION
+ n  | regra |                        teste                        |                     esperado                      |                     observado                     | resultado 
+----+-------+-----------------------------------------------------+---------------------------------------------------+---------------------------------------------------+-----------
+  1 | RN01  | e-mail duplicado                                    | 23505 uq_users_email                              | 23505 uq_users_email                              | PASSOU
+  2 | RD01  | role inválido                                       | 23514 ck_users_role                               | 23514 ck_users_role                               | PASSOU
+  3 | RD01  | role em português (enum é o do Laravel)             | 23514 ck_users_role                               | 23514 ck_users_role                               | PASSOU
+  4 | RD01  | name NULL                                           | 23502 name                                        | 23502 name                                        | PASSOU
+  5 | RD01  | e-mail sem formato válido                           | 23514 ck_users_email                              | 23514 ck_users_email                              | PASSOU
+  6 | RD04  | preço negativo                                      | 23514 ck_services_price                           | 23514 ck_services_price                           | PASSOU
+  7 | RD04  | duração 0                                           | 23514 ck_services_duration                        | 23514 ck_services_duration                        | PASSOU
+  8 | RD04  | categoria inexistente                               | 23514 ck_services_category                        | 23514 ck_services_category                        | PASSOU
+  9 | RD04  | categoria em português                              | 23514 ck_services_category                        | 23514 ck_services_category                        | PASSOU
+ 10 | RN02  | horário semanal de um cliente                       | 23503 fk_working_hours_barber                     | 23503 fk_working_hours_barber                     | PASSOU
+ 11 | RN02  | bloqueio de agenda de um cliente                    | 23503 fk_schedule_blocks_barber                   | 23503 fk_schedule_blocks_barber                   | PASSOU
+ 12 | RN02  | habilitação de serviço para um cliente              | 23503 fk_service_user_barber                      | 23503 fk_service_user_barber                      | PASSOU
+ 13 | RN02  | horário semanal do administrador                    | 23503 fk_working_hours_barber                     | 23503 fk_working_hours_barber                     | PASSOU
+ 14 | RD03  | turno com fim antes do início                       | 23514 ck_working_hours_interval                   | 23514 ck_working_hours_interval                   | PASSOU
+ 15 | RD03  | dia da semana 8                                     | 23514 ck_working_hours_day                        | 23514 ck_working_hours_day                        | PASSOU
+ 16 | RD03  | período de horário duplicado                        | 23505 uq_working_hours_period                     | 23505 uq_working_hours_period                     | PASSOU
+ 17 | RD03  | bloqueio de dia inteiro com horas                   | 23514 ck_schedule_block_times                     | 23514 ck_schedule_block_times                     | PASSOU
+ 18 | RD03  | bloqueio parcial sem hora de fim                    | 23514 ck_schedule_block_times                     | 23514 ck_schedule_block_times                     | PASSOU
+ 19 | RN03  | barbeiro não habilitado (Miguel não faz Fade)       | 23503 fk_appointments_barber_service              | 23503 fk_appointments_barber_service              | PASSOU
+ 20 | RN03  | serviço sem barbeiros habilitados (serviço 6)       | 23503 fk_appointments_barber_service              | 23503 fk_appointments_barber_service              | PASSOU
+ 21 | RN03  | cliente a "executar" a marcação (não é barbeiro)    | 23503 fk_appointments_barber_service              | 23503 fk_appointments_barber_service              | PASSOU
+ 22 | RD05  | estado inválido                                     | 23514 ck_appointments_status                      | 23514 ck_appointments_status                      | PASSOU
+ 23 | RD05  | estado em português                                 | 23514 ck_appointments_status                      | 23514 ck_appointments_status                      | PASSOU
+ 24 | RD05  | hora NULL                                           | 23502 time                                        | 23502 time                                        | PASSOU
+ 25 | RD05  | sem cliente e sem nome walk-in                      | 23514 ck_appointments_customer_or_walkin          | 23514 ck_appointments_customer_or_walkin          | PASSOU
+ 26 | RN07  | mesmo barbeiro, mesma hora, marcação ativa          | 23505 uq_appointments_barber_slot                 | 23505 uq_appointments_barber_slot                 | PASSOU
+ 27 | RN09  | barbeiro a marcar consigo próprio                   | 23514 ck_appointments_customer_not_barber         | 23514 ck_appointments_customer_not_barber         | PASSOU
+ 28 | RN05  | subscrição de outro cliente                         | 23503 fk_appointments_subscription_customer       | 23503 fk_appointments_subscription_customer       | PASSOU
+ 29 | RN05  | marcação walk-in coberta por subscrição             | 23514 ck_appointments_subscription_needs_customer | 23514 ck_appointments_subscription_needs_customer | PASSOU
+ 30 | RD06  | plano com 0 cortes por mês                          | 23514 ck_plans_cuts                               | 23514 ck_plans_cuts                               | PASSOU
+ 31 | RD07  | estado de subscrição inválido                       | 23514 ck_subscriptions_status                     | 23514 ck_subscriptions_status                     | PASSOU
+ 32 | RD07  | data de fim anterior ao início                      | 23514 ck_subscriptions_dates                      | 23514 ck_subscriptions_dates                      | PASSOU
+ 33 | RN08  | 2.ª subscrição ativa do mesmo utilizador            | 23505 uq_one_active_subscription_per_user         | 23505 uq_one_active_subscription_per_user         | PASSOU
+ 34 | RN04  | pagamento com marcação E subscrição                 | 23514 ck_payments_single_origin                   | 23514 ck_payments_single_origin                   | PASSOU
+ 35 | RN04  | pagamento sem origem                                | 23514 ck_payments_single_origin                   | 23514 ck_payments_single_origin                   | PASSOU
+ 36 | RD08  | estado "paid" sem paid_at                           | 23514 ck_payments_paid_at                         | 23514 ck_payments_paid_at                         | PASSOU
+ 37 | RD08  | método em português                                 | 23514 ck_payments_method                          | 23514 ck_payments_method                          | PASSOU
+ 38 | RD08  | montante negativo                                   | 23514 ck_payments_amount                          | 23514 ck_payments_amount                          | PASSOU
+ 39 | RN06  | avaliação a barbeiro E serviço                      | 23514 ck_reviews_single_target                    | 23514 ck_reviews_single_target                    | PASSOU
+ 40 | RN06  | avaliação sem alvo                                  | 23514 ck_reviews_single_target                    | 23514 ck_reviews_single_target                    | PASSOU
+ 41 | RD09  | classificação 6                                     | 23514 ck_reviews_rating                           | 23514 ck_reviews_rating                           | PASSOU
+ 42 | RN06  | avaliar como "barbeiro" um cliente                  | 23503 fk_reviews_barber                           | 23503 fk_reviews_barber                           | PASSOU
+ 43 | RN06  | barbeiro a avaliar-se a si próprio                  | 23514 ck_reviews_not_self                         | 23514 ck_reviews_not_self                         | PASSOU
+ 44 | RD05  | marcação válida (barbeiro habilitado)               | aceite                                            | aceite                                            | PASSOU
+ 45 | RN09  | barbeiro como cliente de outro barbeiro             | aceite                                            | aceite                                            | PASSOU
+ 46 | RD05  | marcação walk-in sem conta                          | aceite                                            | aceite                                            | PASSOU
+ 47 | RN05  | marcação coberta pela subscrição do próprio cliente | aceite                                            | aceite                                            | PASSOU
+ 48 | RN07  | reutilizar o slot de uma marcação cancelada         | aceite                                            | aceite                                            | PASSOU
+ 49 | RN06  | avaliação válida a barbeiro                         | aceite                                            | aceite                                            | PASSOU
+ 50 | RN06  | avaliação válida a serviço                          | aceite                                            | aceite                                            | PASSOU
+ 51 | RN04  | pagamento válido de subscrição                      | aceite                                            | aceite                                            | PASSOU
+ 52 | RD01  | conta sem password (login externo)                  | aceite                                            | aceite                                            | PASSOU
+(52 rows)
+
+ total | passaram | falharam | negativos | positivos 
+-------+----------+----------+-----------+-----------
+    52 |       52 |        0 |        43 |         9
+(1 row)
+
+ROLLBACK

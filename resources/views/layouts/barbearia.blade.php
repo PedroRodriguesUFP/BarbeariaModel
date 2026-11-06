@@ -9,7 +9,7 @@
     >
 
     <title>
-        @yield('title') · {{ config('app.name', 'Barbearia') }}
+        @yield('title') · Barbearia
     </title>
 
     <meta
@@ -48,7 +48,8 @@
                 class="brand"
                 href="{{ route('home') }}"
             >
-                {{ config('app.name', 'Barbearia') }}
+                <span class="brand__pole" aria-hidden="true"></span>
+                Barbearia
             </a>
 
             @php
@@ -267,7 +268,7 @@
             <span>
                 &copy;
                 {{ date('Y') }}
-                {{ config('app.name', 'Barbearia') }}
+                Barbearia
             </span>
 
 
