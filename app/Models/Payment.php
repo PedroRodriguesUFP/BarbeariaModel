@@ -23,6 +23,7 @@ class Payment extends Model
         'method',
         'status',
         'paid_at',
+        'stripe_session_id',
     ];
 
     protected function casts(): array

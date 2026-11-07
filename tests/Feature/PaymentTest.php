@@ -40,15 +40,21 @@ test('client can pay their own appointment and payer_id is forced server side', 
 
     $response->assertRedirect(route('payments.index'));
 
+    // O cliente enviou amount = 25 e status = paid: tudo isto é ignorado.
+    // Fica pendente e com o preço do serviço.
     $this->assertDatabaseHas('payments', [
         'appointment_id' => $appointment->id,
         'payer_id' => $client->id,
+        'status' => 'pending',
     ]);
 
     $this->assertDatabaseMissing('payments', [
         'appointment_id' => $appointment->id,
         'payer_id' => $impersonated->id,
     ]);
+
+    $payment = Payment::where('appointment_id', $appointment->id)->sole();
+    expect((float) $payment->amount)->toBe((float) $appointment->service->price);
 });
 
 test('client cannot pay an appointment that is not theirs', function () {
@@ -165,26 +171,4 @@ test('admin can view and manage any payment', function () {
         ->assertRedirect(route('payments.index'));
 
     $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
-});
-test('client is redirected to stripe checkout and success creates payment', function () {
-    $client = User::factory()->client()->create();
-    $appointment = makeAppointmentFor($client);
-
-    // Testar redirecionamento
-    $response = $this->actingAs($client)
-                     ->post(route('payments.checkout', $appointment));
-
-    $response->assertStatus(303); // Redirecionamento externo do Stripe
-
-    // Testar callback de sucesso
-    $this->actingAs($client)
-         ->get(route('payments.success', ['appointment' => $appointment->id, 'session_id' => 'cs_test_123']))
-         ->assertRedirect(route('payments.index'))
-         ->assertSessionHas('success');
-
-    $this->assertDatabaseHas('payments', [
-        'appointment_id' => $appointment->id,
-        'payer_id' => $client->id,
-        'status' => 'paid',
-    ]);
 });

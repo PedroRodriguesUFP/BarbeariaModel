@@ -6,12 +6,12 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Appointment;
 use App\Models\Payment;
+use App\Services\StripeGateway;
+use App\Services\StripePaymentRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Stripe\Checkout\Session;
-use Stripe\Stripe;
 
 /**
  * Pagamentos das marcações.
@@ -199,7 +199,7 @@ class PaymentController extends Controller
      * Cria uma sessão de pagamento na Stripe e manda o cliente para lá.
      * O preço vem do serviço da marcação, nunca do pedido.
      */
-    public function checkout(Appointment $appointment)
+    public function checkout(Appointment $appointment, StripeGateway $stripe)
     {
         $this->authorize('view', $appointment);
 
@@ -214,32 +214,13 @@ class PaymentController extends Controller
         }
 
         try {
-            Stripe::setApiKey(config('services.stripe.secret'));
-
-            $service = $appointment->service;
-
-            $session = Session::create([
-                'payment_method_types' => ['card'],
-                'client_reference_id'  => $appointment->id,
-                'mode'                 => 'payment',
-
-                'line_items' => [[
-                    'price_data' => [
-                        'currency'     => 'eur',
-                        'product_data' => [
-                            'name' => 'Marcação #' . $appointment->id . ' - ' . $service->name,
-                        ],
-                        // A Stripe quer o valor em cêntimos.
-                        'unit_amount'  => (int) ($service->price * 100),
-                    ],
-                    'quantity' => 1,
-                ]],
-
+            $session = $stripe->createCheckoutSession(
+                $appointment,
                 // A Stripe troca {CHECKOUT_SESSION_ID} pelo id real ao redirecionar.
-                'success_url' => route('payments.success', ['appointment' => $appointment->id])
+                route('payments.success', ['appointment' => $appointment->id])
                     . '&session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url'  => route('payments.cancel', ['appointment' => $appointment->id]),
-            ]);
+                route('payments.cancel', ['appointment' => $appointment->id])
+            );
 
             return redirect()->away($session->url);
         } catch (\Exception $e) {
@@ -253,12 +234,16 @@ class PaymentController extends Controller
     /**
      * O cliente voltou da Stripe. Antes de registar, perguntamos à Stripe
      * se a sessão foi mesmo paga e se é desta marcação.
-     * Recarregar a página não cria um segundo pagamento.
+     *
+     * O webhook da Stripe faz o mesmo registo. Como a sessão só gera um
+     * pagamento (ver StripePaymentRecorder), não há duplicados.
      */
-    public function success(Request $request)
-    {
-        $appointment = Appointment::with('service')
-            ->findOrFail($request->query('appointment'));
+    public function success(
+        Request $request,
+        StripeGateway $stripe,
+        StripePaymentRecorder $recorder
+    ) {
+        $appointment = Appointment::findOrFail($request->query('appointment'));
 
         if ((int) $appointment->customer_id !== (int) auth()->id()) {
             abort(403);
@@ -267,43 +252,28 @@ class PaymentController extends Controller
         $sessionId = $request->query('session_id');
 
         if (! $sessionId) {
-            return redirect()
-                ->route('payments.index')
-                ->with('error', 'Não foi possível confirmar o pagamento.');
+            return $this->paymentNotConfirmed();
         }
 
         try {
-            Stripe::setApiKey(config('services.stripe.secret'));
-
-            $session = Session::retrieve($sessionId);
+            $session = $stripe->retrieveSession($sessionId);
         } catch (\Exception $e) {
             Log::error('Erro Stripe ao confirmar pagamento: ' . $e->getMessage());
 
-            return redirect()
-                ->route('payments.index')
-                ->with('error', 'Não foi possível confirmar o pagamento.');
+            return $this->paymentNotConfirmed();
         }
 
-        // Pago na Stripe e a sessão pertence a esta marcação.
-        $isPaid = $session->payment_status === 'paid'
-            && (string) $session->client_reference_id === (string) $appointment->id;
-
-        if (! $isPaid) {
-            return redirect()
-                ->route('payments.index')
-                ->with('error', 'Não foi possível confirmar o pagamento.');
+        // A sessão tem de ser desta marcação (senão podia-se usar
+        // o id de uma sessão paga de outra marcação).
+        if ((string) $session->client_reference_id !== (string) $appointment->id) {
+            return $this->paymentNotConfirmed();
         }
 
-        if (! $this->isAlreadyPaid($appointment)) {
-            Payment::create([
-                'appointment_id' => $appointment->id,
-                'payer_id'       => auth()->id(),
-                // Valor realmente cobrado pela Stripe (vem em cêntimos).
-                'amount'         => $session->amount_total / 100,
-                'method'         => PaymentMethod::Card->value,
-                'status'         => PaymentStatus::Paid->value,
-                'paid_at'        => now(),
-            ]);
+        // Devolve null se a sessão ainda não estiver paga.
+        $payment = $recorder->record($session);
+
+        if ($payment === null) {
+            return $this->paymentNotConfirmed();
         }
 
         return redirect()
@@ -324,6 +294,13 @@ class PaymentController extends Controller
     // ------------------------------------------------------------------
     // Auxiliares privados
     // ------------------------------------------------------------------
+
+    private function paymentNotConfirmed()
+    {
+        return redirect()
+            ->route('payments.index')
+            ->with('error', 'Não foi possível confirmar o pagamento.');
+    }
 
     // A marcação já tem algum pagamento com estado "paid"?
     private function isAlreadyPaid(Appointment $appointment): bool

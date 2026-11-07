@@ -3,45 +3,54 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Appointment;
-use App\Models\Payment;
+use App\Services\StripeGateway;
+use App\Services\StripePaymentRecorder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Stripe\Webhook;
 
+/**
+ * Recebe os avisos da Stripe (webhook).
+ *
+ * Serve de rede de segurança: se o cliente pagar e fechar o separador
+ * antes de voltar ao site, é aqui que o pagamento fica gravado.
+ *
+ * A Stripe repete o aviso enquanto não receber 2xx, por isso só
+ * devolvemos erro quando a assinatura é inválida.
+ */
 class StripeWebhookController extends Controller
 {
-    public function handle(Request $request)
-    {
-        $payload = $request->getContent();
-        $sigHeader = $request->header('Stripe-Signature');
-        $endpointSecret = env('STRIPE_WEBHOOK_SECRET');
+    // Eventos que significam "o dinheiro entrou".
+    private const PAID_EVENTS = [
+        'checkout.session.completed',
+        'checkout.session.async_payment_succeeded',
+    ];
 
+    public function handle(
+        Request $request,
+        StripeGateway $stripe,
+        StripePaymentRecorder $recorder
+    ): JsonResponse {
         try {
-            $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+            $event = $stripe->constructWebhookEvent(
+                $request->getContent(),
+                $request->header('Stripe-Signature')
+            );
         } catch (\Exception $e) {
             Log::error('Erro no Webhook Stripe: ' . $e->getMessage());
+
             return response()->json(['error' => 'Assinatura inválida'], 400);
         }
 
-        if ($event->type === 'checkout.session.completed') {
+        if (in_array($event->type, self::PAID_EVENTS, true)) {
             $session = $event->data->object;
-            $appointmentId = $session->client_reference_id;
 
-            if ($appointmentId) {
-                $appointment = Appointment::with('service')->find($appointmentId);
-                
-                // Evitar duplicar pagamentos se o success_url já o tiver criado
-                Payment::firstOrCreate(
-                    ['appointment_id' => $appointment->id],
-                    [
-                        'payer_id' => $appointment->customer_id,
-                        'amount' => $appointment->service->price,
-                        'method' => 'card',
-                        'status' => 'paid',
-                        'paid_at' => now(),
-                    ]
-                );
+            // Gravar é seguro repetir: a mesma sessão nunca cria dois pagamentos.
+            if ($recorder->record($session) === null) {
+                Log::info('Webhook Stripe sem pagamento a gravar.', [
+                    'session' => $session->id ?? null,
+                    'reference' => $session->client_reference_id ?? null,
+                ]);
             }
         }
 
