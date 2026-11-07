@@ -1,187 +1,293 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
-use App\Enums\UserRole;
-use App\Http\Controllers\Controller;
-use App\Models\Service;
-use App\Models\User;
+use App\Enums\Status;
+use App\Models\Appointment;
+use App\Models\ScheduleBlock;
+use App\Models\WorkingHour;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
+/**
+ * Área do barbeiro: painel do dia, horário semanal, bloqueios na agenda,
+ * serviços e avaliações.
+ *
+ * Todas as ações usam o barbeiro que tem a sessão iniciada ($request->user()),
+ * por isso um barbeiro nunca vê nem altera dados de outro.
+ */
 class BarberController extends Controller
 {
-    /**
-     * Lista todos os barbeiros da plataforma.
-     */
-    public function index()
+    // ------------------------------------------------------------------
+    // Painel (dashboard)
+    // ------------------------------------------------------------------
+
+    public function dashboard(Request $request)
     {
-        $barbers = User::where('role', UserRole::Barber->value)
-            // Trazemos a contagem de marcações e serviços para exibir na tabela de forma rápida
-            ->withCount(['appointmentsAsBarber', 'services'])
+        $barber = $request->user();
+        $now    = Carbon::now();
+        $today  = Carbon::today();
+
+        // Tudo o que está marcado para hoje, por ordem de hora.
+        $todayAppointments = Appointment::with(['customer', 'service'])
+            ->where('barber_id', $barber->id)
+            ->whereDate('date', $today)
+            ->orderBy('time')
+            ->get();
+
+        // Marcações ainda ativas (pendentes ou confirmadas), de hoje para a frente.
+        $activeAppointments = Appointment::with(['customer', 'service'])
+            ->where('barber_id', $barber->id)
+            ->whereDate('date', '>=', $today)
+            ->whereIn('status', [Status::Pending, Status::Confirmed])
+            ->orderBy('date')
+            ->orderBy('time')
+            ->get();
+
+        // Das ativas, tiramos as de hoje cuja hora já passou.
+        $upcomingAppointments = [];
+
+        foreach ($activeAppointments as $appointment) {
+            if (! $this->hasAlreadyPassed($appointment, $now)) {
+                $upcomingAppointments[] = $appointment;
+            }
+        }
+
+        // A próxima é a primeira da lista (ou nenhuma, se a lista estiver vazia).
+        $nextAppointment = $upcomingAppointments[0] ?? null;
+
+        // Números que aparecem nos cartões do painel.
+        $stats = [
+            'today'     => $todayAppointments->count(),
+            'upcoming'  => count($upcomingAppointments),
+            'completed' => $todayAppointments->where('status', Status::Completed)->count(),
+            'pending'   => $todayAppointments->where('status', Status::Pending)->count(),
+        ];
+
+        $greeting = $this->greetingFor($now);
+
+        return view('barber.dashboard', compact(
+            'barber',
+            'greeting',
+            'stats',
+            'nextAppointment',
+            'todayAppointments'
+        ));
+    }
+
+    // ------------------------------------------------------------------
+    // Disponibilidade: horário semanal e bloqueios
+    // ------------------------------------------------------------------
+
+    public function availability(Request $request)
+    {
+        $barber = $request->user();
+
+        // Um registo por dia da semana, indexado pelo número do dia (0 a 6)
+        // para a view encontrar o dia diretamente.
+        $workingHours = WorkingHour::where('user_id', $barber->id)
+            ->orderBy('day_of_week')
+            ->get()
+            ->keyBy('day_of_week');
+
+        // Só interessam os bloqueios de hoje em diante.
+        $blocks = ScheduleBlock::where('user_id', $barber->id)
+            ->whereDate('date', '>=', Carbon::today())
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
+
+        // Começa na segunda-feira. O domingo é o dia 0 (convenção do Carbon).
+        $daysOfWeek = [
+            1 => 'Segunda-feira',
+            2 => 'Terça-feira',
+            3 => 'Quarta-feira',
+            4 => 'Quinta-feira',
+            5 => 'Sexta-feira',
+            6 => 'Sábado',
+            0 => 'Domingo',
+        ];
+
+        return view('barber.availability', compact(
+            'barber',
+            'workingHours',
+            'blocks',
+            'daysOfWeek'
+        ));
+    }
+
+    public function updateWorkingHours(Request $request)
+    {
+        $barber = $request->user();
+
+        $validated = $request->validate([
+            'days'              => ['required', 'array'],
+            'days.*.active'     => ['nullable', 'boolean'],
+            'days.*.start_time' => ['nullable', 'date_format:H:i'],
+            'days.*.end_time'   => ['nullable', 'date_format:H:i'],
+        ]);
+
+        foreach ($validated['days'] as $dayOfWeek => $dayData) {
+            $dayOfWeek = (int) $dayOfWeek;
+
+            $isActive  = ! empty($dayData['active']);
+            $startTime = $dayData['start_time'] ?? null;
+            $endTime   = $dayData['end_time'] ?? null;
+
+            // Horas válidas = as duas preenchidas e o fim depois do início.
+            $hasValidTimes = $startTime && $endTime && $endTime > $startTime;
+
+            if ($isActive && $hasValidTimes) {
+                // Guarda o horário deste dia (cria se ainda não existir).
+                WorkingHour::updateOrCreate(
+                    ['user_id' => $barber->id, 'day_of_week' => $dayOfWeek],
+                    ['start_time' => $startTime, 'end_time' => $endTime]
+                );
+            } else {
+                // Dia desligado ou com horas inválidas:
+                // o barbeiro não trabalha nesse dia, apagamos o registo.
+                WorkingHour::where('user_id', $barber->id)
+                    ->where('day_of_week', $dayOfWeek)
+                    ->delete();
+            }
+        }
+
+        return redirect()->route('barber.availability')
+            ->with('success', 'Horário semanal atualizado com sucesso.');
+    }
+
+    public function storeBlock(Request $request)
+    {
+        $barber   = $request->user();
+        $isAllDay = $request->boolean('all_day');
+
+        // Se o bloqueio é o dia todo, as horas não são precisas.
+        $timeRule = $isAllDay ? 'nullable' : 'required';
+
+        $validated = $request->validate([
+            'date'       => ['required', 'date', 'after_or_equal:today'],
+            'all_day'    => ['nullable', 'boolean'],
+            'start_time' => [$timeRule, 'date_format:H:i'],
+            'end_time'   => [$timeRule, 'date_format:H:i', 'after:start_time'],
+            'reason'     => ['nullable', 'string', 'max:140'],
+        ]);
+
+        // Dia todo = das 00:00 às 23:59. Senão, usamos as horas escolhidas.
+        if ($isAllDay) {
+            $startTime = '00:00:00';
+            $endTime   = '23:59:59';
+        } else {
+            $startTime = $validated['start_time'];
+            $endTime   = $validated['end_time'];
+        }
+
+        ScheduleBlock::create([
+            'user_id'    => $barber->id,
+            'date'       => $validated['date'],
+            'all_day'    => $isAllDay,
+            'start_time' => $startTime,
+            'end_time'   => $endTime,
+            'reason'     => $validated['reason'] ?? 'Indisponibilidade',
+        ]);
+
+        return redirect()->route('barber.availability')
+            ->with('success', 'Bloqueio registado na agenda.');
+    }
+
+    public function destroyBlock(Request $request, ScheduleBlock $block)
+    {
+        $barber = $request->user();
+
+        // Cada barbeiro só pode remover os seus bloqueios.
+        // (int) para não falhar se um id vier como texto e o outro como número.
+        if ((int) $block->user_id !== (int) $barber->id) {
+            abort(403, 'Não tens permissão para remover este bloqueio.');
+        }
+
+        $block->delete();
+
+        return redirect()->route('barber.availability')
+            ->with('success', 'Bloqueio removido.');
+    }
+
+    // ------------------------------------------------------------------
+    // Serviços e avaliações
+    // ------------------------------------------------------------------
+
+    public function services(Request $request)
+    {
+        $barber = $request->user();
+
+        $services = $barber->services()
+            ->orderBy('category')
             ->orderBy('name')
             ->get();
 
-        return view('admin.barbers.index', compact('barbers'));
+        return view('barber.services', compact('barber', 'services'));
     }
 
-    /**
-     * Mostra o formulário para adicionar um novo barbeiro.
-     */
-    public function create()
+    public function reviews(Request $request)
     {
-        return view('admin.barbers.create', [
-            // Passamos os serviços para podermos associar as especialidades do barbeiro
-            'services' => Service::orderBy('name')->get(),
-        ]);
-    }
+        $barber = $request->user();
 
-    /**
-     * Regista um novo barbeiro na base de dados.
-     */
-    public function store(Request $request)
-    {
-        // 1. Validar os dados recebidos do formulário
-        $data = $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'email'         => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone'         => ['nullable', 'string', 'max:30'],
-            'bio'           => ['nullable', 'string', 'max:2000'],
-            'password'      => ['required', 'confirmed', Password::min(8)],
-            'services'      => ['nullable', 'array'],
-            'services.*'    => ['exists:services,id'],
-            'default_hours' => ['nullable', 'boolean'],
-        ]);
+        // Só existem avaliações diretas ao barbeiro (reviewable_type = User).
+        $reviews = $barber->reviewsReceived()
+            ->with('reviewer')
+            ->latest()
+            ->get();
 
-        // 2. Criar o utilizador já com a permissão (role) de barbeiro
-        $barber = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'phone'    => $data['phone'] ?? null,
-            'bio'      => $data['bio'] ?? null,
-            'password' => $data['password'], // Assume-se que o model User faz o cast 'hashed'
-            'role'     => UserRole::Barber->value,
-            'active'   => true,
-        ]);
+        $totalReviews = $reviews->count();
 
-        // 3. Associar os serviços que este barbeiro sabe fazer
-        $barber->services()->sync($data['services'] ?? []);
+        // Sem avaliações a média é 0 (evita dividir por zero).
+        $averageRating = 0;
 
-        // 4. Configurar horário de trabalho padrão, se solicitado
-        if ($request->boolean('default_hours')) {
-            $this->createDefaultHours($barber);
+        if ($totalReviews > 0) {
+            $averageRating = round($reviews->avg('rating'), 1);
         }
 
-        return redirect()
-            ->route('admin.barbers.index')
-            ->with('success', 'Barbeiro criado com sucesso.');
+        return view('barber.reviews', compact(
+            'barber',
+            'reviews',
+            'totalReviews',
+            'averageRating'
+        ));
     }
 
-    /**
-     * Mostra o formulário de edição de um barbeiro.
-     */
-    public function edit(User $barber)
-    {
-        $this->ensureBarber($barber);
-
-        return view('admin.barbers.edit', [
-            // O "load" garante que já enviamos os serviços atuais do barbeiro para a vista
-            'barber'   => $barber->load('services'),
-            'services' => Service::orderBy('name')->get(),
-        ]);
-    }
+    // ------------------------------------------------------------------
+    // Auxiliares privados
+    // ------------------------------------------------------------------
 
     /**
-     * Atualiza os dados de um barbeiro existente.
+     * Uma marcação "já passou" se o início (data + hora) for anterior a agora.
+     * Sem hora definida, nunca conta como passada.
      */
-    public function update(Request $request, User $barber)
+    private function hasAlreadyPassed(Appointment $appointment, Carbon $now): bool
     {
-        $this->ensureBarber($barber);
-
-        $data = $request->validate([
-            'name'       => ['required', 'string', 'max:255'],
-            // Permite manter o mesmo email ignorando a regra 'unique' para o próprio ID
-            'email'      => ['required', 'email', 'max:255', Rule::unique('users')->ignore($barber->id)],
-            'phone'      => ['nullable', 'string', 'max:30'],
-            'bio'        => ['nullable', 'string', 'max:2000'],
-            'password'   => ['nullable', 'confirmed', Password::min(8)],
-            'services'   => ['nullable', 'array'],
-            'services.*' => ['exists:services,id'],
-            'active'     => ['nullable', 'boolean'],
-        ]);
-
-        // Atualizar dados base
-        $barber->fill([
-            'name'   => $data['name'],
-            'email'  => $data['email'],
-            'phone'  => $data['phone'] ?? null,
-            'bio'    => $data['bio'] ?? null,
-            'active' => $request->boolean('active'),
-        ]);
-
-        // Atualizar password apenas se o administrador preencheu esse campo
-        if (!empty($data['password'])) {
-            $barber->password = $data['password'];
+        if ($appointment->time === null) {
+            return false;
         }
 
-        $barber->save();
-        $barber->services()->sync($data['services'] ?? []);
+        // Junta a data com a hora (aceita "14:30" e "14:30:00").
+        $start = $appointment->date->copy()->setTimeFromTimeString($appointment->time);
 
-        return redirect()
-            ->route('admin.barbers.index')
-            ->with('success', 'Barbeiro atualizado com sucesso.');
+        return $start->lt($now);
     }
 
     /**
-     * Remove um barbeiro da plataforma.
+     * Bom dia até às 11:59, boa tarde até às 19:59, boa noite depois.
      */
-    public function destroy(User $barber)
+    private function greetingFor(Carbon $now): string
     {
-        $this->ensureBarber($barber);
+        $hour = (int) $now->format('H');
 
-        // Proteção essencial: não podemos apagar quem já tem histórico.
-        // Apagar forçaria a exclusão em cascata de pagamentos/marcações, arruinando a faturação e o histórico.
-        if ($barber->appointmentsAsBarber()->exists()) {
-            return back()->withErrors([
-                'barber' => 'Este barbeiro já possui histórico de marcações. Por favor, desativa a conta em vez de a eliminar.',
-            ]);
+        if ($hour < 12) {
+            return 'Bom dia';
         }
 
-        $barber->delete();
-
-        return redirect()
-            ->route('admin.barbers.index')
-            ->with('success', 'Barbeiro eliminado definitivamente.');
-    }
-
-    /**
-     * Garante que o utilizador a ser manipulado é efetivamente um barbeiro.
-     * Impede que um admin edite clientes ou outros admins por este endpoint.
-     */
-    private function ensureBarber(User $user): void
-    {
-        abort_unless($user->role === UserRole::Barber->value, 404);
-    }
-
-    /**
-     * Gera um horário de trabalho padrão (Segunda a Sexta: 09-13h / 14-18h | Sábado: 09-13h).
-     */
-    private function createDefaultHours(User $barber): void
-    {
-        // Dias 1 a 5 (Segunda a Sexta-feira)
-        for ($day = 1; $day <= 5; $day++) {
-            $barber->workingHours()->createMany([
-                ['day_of_week' => $day, 'start_time' => '09:00', 'end_time' => '13:00'],
-                ['day_of_week' => $day, 'start_time' => '14:00', 'end_time' => '18:00'],
-            ]);
+        if ($hour < 20) {
+            return 'Boa tarde';
         }
 
-        // Dia 6 (Sábado) apenas manhãs
-        $barber->workingHours()->create([
-            'day_of_week' => 6, 
-            'start_time'  => '09:00', 
-            'end_time'    => '13:00'
-        ]);
+        return 'Boa noite';
     }
 }

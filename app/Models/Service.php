@@ -9,6 +9,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
+/**
+ * Serviço que a barbearia oferece (corte, barba, etc.).
+ *
+ * duration_minutes é usado para saber quanto tempo a marcação ocupa
+ * na agenda do barbeiro.
+ */
 class Service extends Model
 {
     use HasFactory;
@@ -28,16 +34,15 @@ class Service extends Model
         ];
     }
 
-    // Avaliações feitas ao serviço.
+    // Avaliações feitas a este serviço.
     public function reviews(): MorphMany
     {
-        return $this->morphMany(
-            Review::class,
-            'reviewable'
-        );
+        return $this->morphMany(Review::class, 'reviewable');
     }
 
     // Barbeiros que realizam este serviço.
+    // A tabela service_user liga serviços a utilizadores; o filtro garante
+    // que só aparecem utilizadores com o papel de barbeiro.
     public function barbers(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -45,11 +50,12 @@ class Service extends Model
             'service_user',
             'service_id',
             'user_id'
-        )->where(
-            'users.role',
-            UserRole::Barber->value
-        );
+        )->where('users.role', UserRole::Barber->value);
     }
+
+    // ------------------------------------------------------------------
+    // Pequenos atalhos para atualizar dados
+    // ------------------------------------------------------------------
 
     public function updatePrice(float $newPrice): void
     {
