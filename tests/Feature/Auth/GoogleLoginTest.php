@@ -36,7 +36,7 @@ test('new google user without an account is created as a client', function () {
 
     $response = $this->get(route('auth.google.callback'));
 
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route('appointments.index'));
 
     $this->assertDatabaseHas('users', [
         'email' => 'novo@example.com',
@@ -58,7 +58,7 @@ test('existing user is linked to google by matching email', function () {
     );
 
     $this->get(route('auth.google.callback'))
-        ->assertRedirect(route('home'));
+        ->assertRedirect(route('appointments.index'));
 
     $this->assertAuthenticatedAs($user->fresh());
     expect($user->fresh()->google_id)->toBe('google-456');
@@ -74,7 +74,7 @@ test('user already linked by google id logs in directly', function () {
     );
 
     $this->get(route('auth.google.callback'))
-        ->assertRedirect(route('home'));
+        ->assertRedirect(route('appointments.index'));
 
     $this->assertAuthenticatedAs($user);
 });

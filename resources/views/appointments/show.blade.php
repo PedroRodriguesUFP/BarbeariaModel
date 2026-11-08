@@ -149,6 +149,48 @@
 
 
         {{-- =====================================================
+            PAGAMENTO (só o cliente da marcação)
+        ====================================================== --}}
+        @if ($appointment->canBePaidBy(auth()->user()))
+
+            @php
+                $preco = number_format((float) ($appointment->service?->price ?? 0), 2, ',', '.');
+            @endphp
+
+            <div class="card" style="margin-top: 2rem;">
+                <span class="tag">PAGAMENTO</span>
+
+                <h2>Pagar esta marcação</h2>
+
+                <p>
+                    {{ $appointment->service?->name ?? 'Serviço' }} · {{ $preco }} €
+                </p>
+
+                <form
+                    method="POST"
+                    action="{{ route('payments.checkout', $appointment) }}"
+                >
+                    @csrf
+
+                    <button type="submit" class="btn">
+                        Pagar com cartão
+                    </button>
+                </form>
+            </div>
+
+        @elseif (
+            (int) auth()->id() === (int) $appointment->customer_id
+            && $appointment->isPaid()
+        )
+
+            <p class="flash" style="margin-top: 2rem;">
+                Esta marcação já está paga.
+            </p>
+
+        @endif
+
+
+        {{-- =====================================================
             AÇÕES DO BARBEIRO
         ====================================================== --}}
         @if ($isBarber)
