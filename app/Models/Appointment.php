@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Appointment extends Model
 {
+    // 
     protected $fillable = [
     'date',
     'time',
@@ -21,21 +22,21 @@ class Appointment extends Model
     'barber_id',
     ];
 
-    // Define a conversão dos atributos do modelo.
+    //converte os campos date e status  para os tipos corretos
     protected function casts(): array
     {
         return [
-            'date' => 'date',
-            'status' => Status::class,
+            'date' => 'date', // converte para um objeto data laravel
+            'status' => Status::class, // converte para o enum Status
         ];
     }
 
-    // Devolve o cliente da marcação.
+    // Retorna o dono da marcação.
     public function customer(): BelongsTo
     {
     return $this->belongsTo(
-        User::class,
-        'customer_id'
+        User::class, 
+        'customer_id' // foreign key na tabela users
     );
     }
 
@@ -44,7 +45,7 @@ class Appointment extends Model
     {
     return $this->belongsTo(
         User::class,
-        'barber_id'
+        'barber_id' // foreign key´do barbeiro na tabela users
     );
     }
 
@@ -52,8 +53,8 @@ class Appointment extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(
-            Service::class,
-            'service_id'
+            Service::class, 
+            'service_id' // foreign key do serviço na tabela services
         );
     }
 
@@ -155,6 +156,7 @@ class Appointment extends Model
     // Verifica se a marcação pode ser cancelada.
     public function canBeCancelled(): bool
     {
+        
         if ($this->status == Status::Pending || $this->status === Status::Confirmed) {
             return true;
         }
@@ -186,6 +188,7 @@ class Appointment extends Model
         }
 
     }
+    // verifica se o cliente é um walk-in (sem conta)
     public function isWalkIn(): bool
     {
         return $this->customer_id === null;
@@ -197,6 +200,7 @@ class Appointment extends Model
             return $this->customer->name;
         }
 
-        return $this->walk_in_name ?? 'Cliente sem conta';
+// Se não houver cliente associado, retorna o nome do walk-in.
+        return $this->walk_in_name ?? 'Walk-in';
     }
 }

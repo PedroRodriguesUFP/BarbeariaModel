@@ -1,6 +1,6 @@
 // Cartões e blocos de dados ganham inclinação 3D sem ser preciso marcar cada um no HTML.
 document.querySelectorAll('.card, .detail, .barber-stat-card').forEach(function (el) {
-    if (!el.hasAttribute('data-tilt')) {
+    if (!el.hasAttribute('data-tilt') && !el.hasAttribute('data-no-tilt')) {
         el.setAttribute('data-tilt', '');
         el.setAttribute('data-tilt-max', '7');
     }

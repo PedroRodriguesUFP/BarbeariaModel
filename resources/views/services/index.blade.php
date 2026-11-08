@@ -38,7 +38,9 @@
             <div class="cards">
                 @foreach ($services as $service)
                     @php($categoria = $service->category->value)
-                    <article class="card" data-tilt>
+                    <article class="card" data-no-tilt>
+                        <x-service-carousel :service="$service" compact />
+
                         <span class="tag lift">{{ $categorias[$categoria] ?? $categoria }}</span>
                         <h2 class="lift">{{ $service->name }}</h2>
                         <span class="price lift-far">{{ number_format($service->price, 2, ',', ' ') }} €</span>

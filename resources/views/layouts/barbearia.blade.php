@@ -40,9 +40,9 @@
     {{-- =====================================================
         TOPBAR
     ====================================================== --}}
-    <div class="wrap">
+    <header class="site-header">
 
-        <header class="topbar">
+        <div class="wrap topbar">
 
             <a
                 class="brand"
@@ -98,8 +98,26 @@
 
                 @auth
 
+                    @php
+                        $roleLabel = $u->isAdmin() ? 'Administração' : ($u->isBarber() ? 'Barbeiro' : 'Cliente');
+                        $initials = \Illuminate\Support\Str::of($u->name)
+                            ->explode(' ')->filter()->take(2)
+                            ->map(fn ($w) => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($w, 0, 1)))
+                            ->implode('');
+                    @endphp
+
+                    @if ($u->isBarber() && Route::has('calendar.appointments.create'))
+                        <a class="btn small topbar-cta" href="{{ route('calendar.appointments.create') }}">Nova marcação</a>
+                    @else
+                        <a class="btn small topbar-cta" href="{{ route('appointments.create') }}">Marcar horário</a>
+                    @endif
+
                     <span class="who">
-                        {{ auth()->user()->name }}
+                        <span class="avatar" aria-hidden="true">{{ $initials }}</span>
+                        <span class="who__text">
+                            <span class="who__name">{{ $u->name }}</span>
+                            <span class="who__role">{{ $roleLabel }}</span>
+                        </span>
                     </span>
 
                     <form
@@ -125,13 +143,15 @@
                         Entrar
                     </a>
 
+                    <a class="btn small topbar-cta" href="{{ route('login') }}">Marcar horário</a>
+
                 @endauth
 
             </div>
 
-        </header>
+        </div>
 
-    </div>
+    </header>
 
 
     {{-- =====================================================
@@ -343,6 +363,11 @@
 
     <script
         src="{{ asset('js/barbearia.js') }}"
+        defer
+    ></script>
+
+    <script
+        src="{{ asset('js/carousel3d.js') }}"
         defer
     ></script>
 
