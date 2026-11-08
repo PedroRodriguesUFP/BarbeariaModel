@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Appointment extends Model
 {
+    // 
     protected $fillable = [
         'date',
         'time',
@@ -32,34 +33,40 @@ class Appointment extends Model
         'barber_id',
     ];
 
+    //converte os campos date e status  para os tipos corretos
     protected function casts(): array
     {
         return [
-            'date'   => 'date',
-            'status' => Status::class,
+            'date' => 'date', // converte para um objeto data laravel
+            'status' => Status::class, // converte para o enum Status
         ];
     }
 
-    // ------------------------------------------------------------------
-    // Relações
-    // ------------------------------------------------------------------
-
-    // Cliente da marcação (vazio se for walk-in).
+    // Retorna o dono da marcação.
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'customer_id');
+    return $this->belongsTo(
+        User::class, 
+        'customer_id' // foreign key na tabela users
+    );
     }
 
     // Barbeiro da marcação.
     public function barber(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'barber_id');
+    return $this->belongsTo(
+        User::class,
+        'barber_id' // foreign key´do barbeiro na tabela users
+    );
     }
 
     // Serviço marcado.
     public function service(): BelongsTo
     {
-        return $this->belongsTo(Service::class, 'service_id');
+        return $this->belongsTo(
+            Service::class, 
+            'service_id' // foreign key do serviço na tabela services
+        );
     }
 
     // Pagamentos feitos para esta marcação.
@@ -152,8 +159,10 @@ class Appointment extends Model
     // Só se cancela o que ainda está em aberto.
     public function canBeCancelled(): bool
     {
-        return $this->isPending() || $this->isConfirmed();
-    }
+        
+        if ($this->status == Status::Pending || $this->status === Status::Confirmed) {
+            return true;
+        }
 
     // Muda o estado diretamente, sem verificar a transição.
     public function updateStatus(Status $newStatus): void
@@ -217,6 +226,7 @@ class Appointment extends Model
             && ! $this->isCancelled()
             && ! $this->isPaid();
     }
+    // verifica se o cliente é um walk-in (sem conta)
 
     // ------------------------------------------------------------------
     // Cliente sem conta (walk-in)
@@ -234,6 +244,7 @@ class Appointment extends Model
             return $this->customer->name;
         }
 
-        return $this->walk_in_name ?? 'Cliente sem conta';
+// Se não houver cliente associado, retorna o nome do walk-in.
+        return $this->walk_in_name ?? 'Walk-in';
     }
 }
