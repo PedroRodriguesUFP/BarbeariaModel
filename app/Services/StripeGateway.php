@@ -31,7 +31,6 @@ class StripeGateway
         $service = $appointment->service;
 
         return Session::create([
-            'payment_method_types' => ['card'],
             'client_reference_id'  => $appointment->id,
             'mode'                 => 'payment',
 

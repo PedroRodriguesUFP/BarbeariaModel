@@ -38,7 +38,7 @@ class AppointmentController extends Controller
         $user = $request->user();
 
         // Carregamos já as relações para a view não fazer uma query por linha.
-        $query = Appointment::with(['customer', 'barber', 'service']);
+        $query = Appointment::with(['customer', 'barber', 'service', 'payments']);
 
         // Cliente e barbeiro só veem as suas. O admin não leva filtro.
         if ($user->role === UserRole::Client) {
@@ -59,7 +59,7 @@ class AppointmentController extends Controller
 
     public function show($id)
     {
-        $appointment = Appointment::with(['customer', 'barber', 'service'])
+        $appointment = Appointment::with(['customer', 'barber', 'service', 'payments'])
             ->findOrFail($id);
 
         $this->authorize('view', $appointment);

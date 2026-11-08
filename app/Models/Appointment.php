@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use App\Enums\Status;
 use DateTime;
 use Illuminate\Database\Eloquent\Model;
@@ -195,6 +196,26 @@ class Appointment extends Model
 
         $this->status = Status::Cancelled;
         $this->save();
+    }
+
+    // ------------------------------------------------------------------
+    // Pagamento
+    // ------------------------------------------------------------------
+
+    // A marcação já tem algum pagamento com estado "paid"?
+    public function isPaid(): bool
+    {
+        return $this->payments->contains('status', PaymentStatus::Paid->value);
+    }
+
+    // Este utilizador pode pagar esta marcação agora?
+    // Tem de ser o cliente dela, e ela não pode estar cancelada nem paga.
+    public function canBePaidBy(User $user): bool
+    {
+        return $this->customer_id !== null
+            && (int) $this->customer_id === (int) $user->id
+            && ! $this->isCancelled()
+            && ! $this->isPaid();
     }
 
     // ------------------------------------------------------------------
