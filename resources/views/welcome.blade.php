@@ -27,9 +27,28 @@
             </div>
         </div>
 
-        <div class="pole-wrap" aria-hidden="true">
-            <div class="pole-stage" data-tilt data-tilt-max="18">
-                <div class="pole"></div>
+        <div class="stage" aria-hidden="true" data-stage>
+            <div class="stage__floor"></div>
+
+            <div class="stage__scene">
+                <div class="pole-stage">
+                    <div class="pole"></div>
+                </div>
+
+                @php($orbit = $services->take(6)->values())
+
+                @if ($orbit->isNotEmpty())
+                    <ul class="ring" style="--n: {{ $orbit->count() }}">
+                        @foreach ($orbit as $i => $service)
+                            <li style="--i: {{ $i }}">
+                                <span class="chip">
+                                    {{ $service->name }}
+                                    <b>{{ number_format($service->price, 0, ',', ' ') }} €</b>
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
             </div>
         </div>
     </section>
