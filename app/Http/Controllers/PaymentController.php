@@ -74,7 +74,23 @@ class PaymentController extends Controller
     {
         $this->authorize('create', Payment::class);
 
-        return view('payments.create');
+        $user = auth()->user();
+
+        // O admin regista pagamentos à mão (formulário completo).
+        // O cliente vê as suas marcações por pagar e paga com cartão.
+        $appointments = collect();
+
+        if (! $user->isAdmin()) {
+            $appointments = Appointment::with(['service', 'barber', 'payments'])
+                ->where('customer_id', $user->id)
+                ->orderBy('date')
+                ->orderBy('time')
+                ->get()
+                ->filter(fn (Appointment $appointment) => $appointment->canBePaidBy($user))
+                ->values();
+        }
+
+        return view('payments.create', compact('appointments'));
     }
 
     public function store(Request $request)

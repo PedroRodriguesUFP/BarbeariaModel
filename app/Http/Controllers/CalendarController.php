@@ -56,7 +56,7 @@ class CalendarController extends Controller
             ->get();
 
         return view(
-            'barbers.index',
+            'calendar.index',
             compact('barbers')
         );
     }

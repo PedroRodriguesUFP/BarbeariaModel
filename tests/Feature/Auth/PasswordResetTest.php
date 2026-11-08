@@ -69,7 +69,7 @@ test('user can reset password with a valid token', function () {
     $this->post(route('login'), [
         'email' => $user->email,
         'password' => 'new-password',
-    ])->assertRedirect(route('home'));
+    ])->assertRedirect(route('appointments.index'));
 });
 
 test('user cannot reset password with an invalid token', function () {

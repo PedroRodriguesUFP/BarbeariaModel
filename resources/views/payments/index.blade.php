@@ -25,7 +25,9 @@
             <p class="sub">Valores recebidos por cada marcação.</p>
         </div>
         @can('create', \App\Models\Payment::class)
-            <a class="btn" href="{{ route('payments.create') }}">Novo pagamento</a>
+            <a class="btn" href="{{ route('payments.create') }}">
+                {{ auth()->user()->isAdmin() ? 'Novo pagamento' : 'Pagar uma marcação' }}
+            </a>
         @endcan
     </header>
 

@@ -1,3 +1,51 @@
+// Cartões e blocos de dados ganham inclinação 3D sem ser preciso marcar cada um no HTML.
+document.querySelectorAll('.card, .detail, .barber-stat-card').forEach(function (el) {
+    if (!el.hasAttribute('data-tilt')) {
+        el.setAttribute('data-tilt', '');
+        el.setAttribute('data-tilt-max', '7');
+    }
+});
+
+// Palco 3D da página inicial: a cena segue o rato (ou o dedo) com profundidade.
+(function () {
+    var stage = document.querySelector('[data-stage]');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!stage || reduce) {
+        return;
+    }
+
+    var frame = null;
+    var timer = null;
+
+    function move(x, y) {
+        if (frame) {
+            return;
+        }
+
+        frame = requestAnimationFrame(function () {
+            frame = null;
+            var box = stage.getBoundingClientRect();
+            var px = Math.max(-1, Math.min(1, ((x - box.left) / box.width - 0.5) * 2));
+            var py = Math.max(-1, Math.min(1, ((y - box.top) / box.height - 0.5) * 2));
+
+            stage.classList.add('is-moving');
+            stage.style.setProperty('--px', px.toFixed(3));
+            stage.style.setProperty('--py', py.toFixed(3));
+
+            clearTimeout(timer);
+            timer = setTimeout(function () { stage.classList.remove('is-moving'); }, 120);
+        });
+    }
+
+    window.addEventListener('pointermove', function (event) { move(event.clientX, event.clientY); }, { passive: true });
+
+    window.addEventListener('pointerleave', function () {
+        stage.style.setProperty('--px', '0');
+        stage.style.setProperty('--py', '0');
+    });
+})();
+
 // Inclinação 3D ao passar o rato. Só em dispositivos com rato e sem "movimento reduzido".
 (function () {
     var canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;

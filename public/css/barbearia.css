@@ -68,13 +68,9 @@ a { color: inherit; }
 
 .wrap {
     width: 100%;
-    max-width: 68rem;
+    max-width: 96rem;
     margin: 0 auto;
-    padding: 0 1rem;
-}
-
-@media (min-width: 48rem) {
-    .wrap { padding: 0 2rem; }
+    padding: 0 clamp(1rem, 4vw, 4.5rem);
 }
 
 /* ---------- Cabeçalho ---------- */
@@ -87,12 +83,27 @@ a { color: inherit; }
 }
 
 .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
     font-weight: 800;
     font-size: 1.25rem;
     letter-spacing: -0.01em;
     text-decoration: none;
     white-space: nowrap;
 }
+
+.brand__pole {
+    width: 0.8rem;
+    height: 1.9rem;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: repeating-linear-gradient(-45deg, var(--red) 0 0.3rem, var(--white) 0.3rem 0.6rem, var(--sky) 0.6rem 0.9rem, var(--white) 0.9rem 1.2rem);
+    background-size: 100% 1.7rem;
+    animation: brand-spin 2.4s linear infinite;
+}
+
+@keyframes brand-spin { to { background-position: 0 1.7rem; } }
 
 .topbar nav {
     display: flex;
@@ -216,7 +227,7 @@ a { color: inherit; }
 
 .page-body { padding-bottom: 4rem; }
 
-.narrow { max-width: 40rem; }
+.narrow { max-width: 52rem; }
 
 /* ---------- Avisos ---------- */
 .flash, .errors {
@@ -467,7 +478,7 @@ a { color: inherit; }
 .cards {
     display: grid;
     gap: 1.75rem;
-    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
 }
 
 .card {
@@ -535,7 +546,14 @@ a { color: inherit; }
    Usa as propriedades rotate/translate para não chocar com a inclinação do rato. */
 @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
-        .cards { perspective: 1000px; }
+        .cards, .menu, .steps { perspective: 1000px; }
+
+        .menu li,
+        .steps li {
+            animation: card-in linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 60%;
+        }
 
         .cards .card {
             animation: card-in linear both;
@@ -550,69 +568,113 @@ a { color: inherit; }
     }
 }
 
-/* ---------- Hero ---------- */
+/* ---------- Hero: ecrã inteiro, com poste 3D e anel de serviços ---------- */
 .hero {
     display: grid;
-    gap: 2.5rem;
-    padding: 2.5rem 0 4rem;
+    gap: 2rem;
     align-items: center;
+    min-height: calc(100svh - 6rem);
+    padding: 1rem 0 3rem;
 }
 
-@media (min-width: 52rem) {
+@media (min-width: 56rem) {
     .hero {
-        grid-template-columns: 1fr 12rem;
-        gap: 4rem;
-        padding: 4rem 0 6rem;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+        gap: clamp(2rem, 5vw, 6rem);
+        padding: 1rem 0 4rem;
     }
 }
 
 .hero h1 {
     margin: 0 0 1.25rem;
-    font-size: clamp(2.5rem, 8vw, 5.25rem);
-    line-height: 0.98;
-    letter-spacing: -0.035em;
+    font-size: clamp(2.75rem, 7.5vw, 7rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
     font-weight: 800;
-    max-width: 12ch;
+    max-width: 11ch;
 }
 
 .lead {
     margin: 0 0 2rem;
-    max-width: 34rem;
+    max-width: 36rem;
     color: var(--steel);
-    font-size: 1.1875rem;
+    font-size: clamp(1.1rem, 1.6vw, 1.35rem);
 }
 
-/* Poste de barbeiro: o momento de movimento (e de 3D) da página inicial */
-.pole-wrap {
-    display: flex;
-    justify-content: center;
-    perspective: 900px;
-    padding: 1rem 0 2rem;
-}
-
-.pole-stage {
+/* Palco 3D */
+.stage {
+    --r: clamp(8.5rem, 17vw, 15rem);
     position: relative;
-    transform-style: preserve-3d;
+    overflow-x: clip;
+    display: grid;
+    place-items: center;
+    min-height: clamp(26rem, 68svh, 46rem);
+    perspective: 1400px;
+    --px: 0;
+    --py: 0;
 }
+
+/* luz de fundo atrás do poste */
+.stage::before {
+    content: "";
+    position: absolute;
+    inset: 4% 0 10%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--sky) 45%, transparent), transparent 72%);
+    filter: blur(8px);
+}
+
+/* chão em perspetiva */
+.stage__floor {
+    position: absolute;
+    left: -10%;
+    right: -10%;
+    bottom: 0;
+    height: 38%;
+    transform: rotateX(68deg);
+    transform-origin: 50% 100%;
+    background-image:
+        linear-gradient(var(--line) 2px, transparent 2px),
+        linear-gradient(90deg, var(--line) 2px, transparent 2px);
+    background-size: 3.5rem 3.5rem;
+    -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 95%);
+    mask-image: linear-gradient(to top, #000 10%, transparent 95%);
+    opacity: 0.75;
+}
+
+.stage__scene {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    transform-style: preserve-3d;
+    transform: rotateX(calc(-7deg + var(--py) * -9deg)) rotateY(calc(var(--px) * 22deg));
+    transition: transform 0.35s ease-out;
+    will-change: transform;
+}
+
+.stage.is-moving .stage__scene { transition: transform 0.08s linear; }
+
+.pole-stage { position: relative; transform-style: preserve-3d; }
 
 .pole-stage::after {
     /* sombra no chão */
     content: "";
     position: absolute;
     left: 50%;
-    bottom: -1.6rem;
-    width: 7rem;
-    height: 1.1rem;
+    bottom: -2.2rem;
+    width: 11rem;
+    height: 1.6rem;
     transform: translateX(-50%) translateZ(-1px);
     border-radius: 50%;
-    background: radial-gradient(closest-side, rgba(18, 36, 58, 0.35), transparent);
+    background: radial-gradient(closest-side, rgba(18, 36, 58, 0.45), transparent);
 }
 
 .pole {
     position: relative;
-    width: 6.5rem;
-    height: 20rem;
-    border-radius: 3.25rem;
+    width: 9rem;
+    height: clamp(19rem, 52svh, 31rem);
+    border-radius: 4.5rem;
     border: 4px solid var(--ink);
     background-color: var(--white);
     background-image: repeating-linear-gradient(
@@ -625,8 +687,9 @@ a { color: inherit; }
     background-size: 100% 7.9rem;
     animation: spin 2.4s linear infinite;
     /* cilindro: luz à esquerda, sombra à direita */
-    box-shadow: inset 1.6rem 0 1.4rem -0.8rem rgba(255, 255, 255, 0.55),
-                inset -1.8rem 0 1.4rem -0.6rem rgba(18, 36, 58, 0.4);
+    box-shadow: inset 1.8rem 0 1.6rem -0.8rem rgba(255, 255, 255, 0.6),
+                inset -2rem 0 1.6rem -0.6rem rgba(18, 36, 58, 0.45),
+                0 2rem 3rem -1rem rgba(18, 36, 58, 0.35);
 }
 
 /* tampas do poste */
@@ -635,39 +698,93 @@ a { color: inherit; }
     content: "";
     position: absolute;
     left: 50%;
-    width: 7.6rem;
-    height: 1.3rem;
+    width: 10.4rem;
+    height: 1.5rem;
     transform: translateX(-50%);
     border: 4px solid var(--ink);
     border-radius: 0.5rem;
     background: var(--ink);
 }
 
-.pole::before { top: -1.2rem; }
-.pole::after  { bottom: -1.2rem; }
+.pole::before { top: -1.4rem; }
+.pole::after  { bottom: -1.4rem; }
 
-@media (max-width: 51.99rem) {
-    .pole-wrap { justify-content: flex-start; padding: 0; perspective: none; }
-    .pole-stage { width: 100%; max-width: 22rem; }
-    .pole-stage::after { display: none; }
-    .pole {
-        width: 100%;
-        height: 3.5rem;
-        border-radius: 1.75rem;
-        max-width: 22rem;
-        background-size: 7.9rem 100%;
-        animation-name: spin-x;
-        box-shadow: inset 0 1rem 1rem -0.7rem rgba(255, 255, 255, 0.55),
-                    inset 0 -1rem 1rem -0.6rem rgba(18, 36, 58, 0.4);
-    }
-    .pole::before, .pole::after { display: none; }
+/* Anel de serviços a orbitar o poste */
+.ring {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    transform-style: preserve-3d;
+    animation: orbit 26s linear infinite;
 }
 
-@keyframes spin   { to { background-position: 0 7.9rem; } }
-@keyframes spin-x { to { background-position: 7.9rem 0; } }
+.ring li {
+    --a: calc(var(--i) * 360deg / var(--n));
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform-style: preserve-3d;
+    transform: rotateY(var(--a)) translateZ(var(--r));
+}
+
+.chip {
+    display: block;
+    translate: -50% -50%;
+    padding: 0.55rem 1rem;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: clamp(0.85rem, 1.1vw, 1rem);
+    white-space: nowrap;
+    box-shadow: 0 4px 0 var(--ink);
+    /* contra-rotação: o texto fica sempre virado para quem olha */
+    animation: face 26s linear infinite;
+}
+
+.chip b { margin-left: 0.5rem; color: var(--red); font-variant-numeric: tabular-nums; }
+
+/* alturas diferentes para o anel não parecer uma linha reta */
+.ring li:nth-child(3n + 1) { margin-top: -6.5rem; }
+.ring li:nth-child(3n + 2) { margin-top: 1rem; }
+.ring li:nth-child(3n)     { margin-top: 8rem; }
+
+@keyframes orbit { to { transform: rotateY(360deg); } }
+
+@keyframes face {
+    from { transform: rotateY(calc(var(--a) * -1)); }
+    to   { transform: rotateY(calc(var(--a) * -1 - 360deg)); }
+}
+
+/* Ao fazer scroll, a cena roda um pouco mais (só onde o navegador suporta) */
+@supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+        .stage__scene {
+            animation: scene-scroll linear both;
+            animation-timeline: scroll(root);
+            animation-range: 0 90svh;
+        }
+
+        @keyframes scene-scroll {
+            from { rotate: y 0deg;  translate: 0 0; }
+            to   { rotate: y 55deg; translate: 0 -3rem; }
+        }
+    }
+}
+
+@media (max-width: 55.99rem) {
+    .stage { --r: 6.5rem; min-height: 26rem; }
+    .pole { width: 6rem; height: 18rem; border-radius: 3rem; }
+    .pole::before, .pole::after { width: 7.2rem; }
+}
+
+@keyframes spin { to { background-position: 0 7.9rem; } }
 
 /* ---------- Secções da página inicial ---------- */
-.section { padding: 3.5rem 0; border-top: 2px solid var(--ink); }
+.section { padding: clamp(3.5rem, 8vw, 7rem) 0; border-top: 2px solid var(--ink); }
 
 .section h2 {
     margin: 0 0 0.5rem;
@@ -678,7 +795,14 @@ a { color: inherit; }
 
 .section .sub { margin: 0 0 2rem; color: var(--steel); max-width: 34rem; }
 
-.menu { list-style: none; margin: 0; padding: 0; }
+.menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+    column-gap: clamp(2rem, 6vw, 6rem);
+}
 
 .menu li {
     display: grid;
@@ -782,7 +906,13 @@ a { color: inherit; }
 
 /* ---------- Movimento reduzido ---------- */
 @media (prefers-reduced-motion: reduce) {
-    .pole { animation: none; }
+    .pole,
+    .brand__pole,
+    .ring,
+    .chip,
+    .stage__scene { animation: none; }
+
+    .stage__scene { transform: none; transition: none; }
 
     @view-transition { navigation: none; }
 

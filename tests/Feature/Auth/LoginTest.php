@@ -18,7 +18,7 @@ test('user can login with correct credentials', function () {
         'password' => 'password',
     ]);
 
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route('appointments.index'));
     $this->assertAuthenticatedAs($user);
 });
 

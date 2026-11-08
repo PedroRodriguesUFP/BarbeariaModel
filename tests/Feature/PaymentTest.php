@@ -172,3 +172,25 @@ test('admin can view and manage any payment', function () {
 
     $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
 });
+
+test('client cannot edit or delete their own payment', function () {
+    $client = User::factory()->client()->create();
+
+    $payment = Payment::create([
+        'appointment_id' => makeAppointmentFor($client)->id,
+        'payer_id' => $client->id,
+        'amount' => 30,
+        'method' => 'cash',
+        'status' => 'paid',
+    ]);
+
+    $this->actingAs($client)
+        ->put(route('payments.update', $payment), ['method' => 'card'])
+        ->assertForbidden();
+
+    $this->actingAs($client)
+        ->delete(route('payments.destroy', $payment))
+        ->assertForbidden();
+
+    $this->assertDatabaseHas('payments', ['id' => $payment->id, 'method' => 'cash']);
+});
