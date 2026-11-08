@@ -355,3 +355,21 @@ test('webhook ignores other event types', function () {
 
     expect(Payment::count())->toBe(0);
 });
+
+test('checkout shows a friendly message when stripe times out', function () {
+    $client = User::factory()->client()->create();
+    $appointment = stripeAppointmentFor($client);
+
+    $this->mock(StripeGateway::class)
+        ->shouldReceive('createCheckoutSession')
+        ->once()
+        ->andThrow(new \Stripe\Exception\ApiConnectionException('timeout'));
+
+    $this->actingAs($client)
+        ->from(route('appointments.show', $appointment))
+        ->post(route('payments.checkout', $appointment))
+        ->assertRedirect(route('appointments.show', $appointment))
+        ->assertSessionHas('error');
+
+    expect(Payment::count())->toBe(0);
+});

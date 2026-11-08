@@ -17,6 +17,7 @@ class Review extends Model
 {
     protected $fillable = [
         'reviewer_id',
+        'appointment_id',
         'reviewable_type',
         'reviewable_id',
         'rating',
@@ -27,6 +28,12 @@ class Review extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewer_id');
+    }
+
+    // Marcação a que esta avaliação se refere.
+    public function appointment(): BelongsTo
+    {
+        return $this->belongsTo(Appointment::class);
     }
 
     // O barbeiro ou o serviço avaliado.

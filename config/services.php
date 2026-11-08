@@ -38,6 +38,9 @@ return [
     'key' => env('STRIPE_KEY'),
     'secret' => env('STRIPE_SECRET'),
     'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    'timeout' => env('STRIPE_TIMEOUT', 10),
+    'connect_timeout' => env('STRIPE_CONNECT_TIMEOUT', 5),
+    'retries' => env('STRIPE_RETRIES', 2),
     ],
 
     'google' => [

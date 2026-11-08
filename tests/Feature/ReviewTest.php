@@ -9,31 +9,97 @@ test('guest is redirected to login when listing reviews', function () {
         ->assertRedirect(route('login'));
 });
 
-test('authenticated user can write a review and reviewer_id is forced server side', function () {
+function completedAppointmentFor(User $client): \App\Models\Appointment
+{
+    return \App\Models\Appointment::create([
+        'date' => now()->subDay()->toDateString(),
+        'time' => '10:00',
+        'status' => \App\Enums\Status::Completed,
+        'customer_id' => $client->id,
+        'service_id' => Service::factory()->create()->id,
+        'barber_id' => User::factory()->barber()->create()->id,
+    ]);
+}
+
+test('client reviews barber and service separately for a completed appointment', function () {
     $client = User::factory()->client()->create();
     $impersonated = User::factory()->client()->create();
-    $service = Service::factory()->create();
+    $appointment = completedAppointmentFor($client);
 
-    $response = $this->actingAs($client)->post(route('reviews.store'), [
+    $this->actingAs($client)->post(route('reviews.store'), [
         // reviewer_id spoofado deliberadamente: deve ser ignorado.
         'reviewer_id' => $impersonated->id,
-        'reviewable_type' => Service::class,
-        'reviewable_id' => $service->id,
-        'rating' => 5,
-        'comment' => 'Muito bom.',
-    ]);
-
-    $response->assertRedirect(route('reviews.index'));
+        'appointment_id' => $appointment->id,
+        'barber_rating' => 5,
+        'barber_comment' => 'Excelente barbeiro.',
+        'service_rating' => 4,
+        'service_comment' => 'Bom corte.',
+    ])->assertRedirect(route('reviews.index'));
 
     $this->assertDatabaseHas('reviews', [
         'reviewer_id' => $client->id,
-        'reviewable_id' => $service->id,
+        'appointment_id' => $appointment->id,
+        'reviewable_type' => User::class,
+        'reviewable_id' => $appointment->barber_id,
+        'rating' => 5,
+    ]);
+    $this->assertDatabaseHas('reviews', [
+        'reviewer_id' => $client->id,
+        'appointment_id' => $appointment->id,
         'reviewable_type' => Service::class,
+        'reviewable_id' => $appointment->service_id,
+        'rating' => 4,
     ]);
+    $this->assertDatabaseMissing('reviews', ['reviewer_id' => $impersonated->id]);
+});
 
-    $this->assertDatabaseMissing('reviews', [
-        'reviewer_id' => $impersonated->id,
-    ]);
+test('client cannot review the same appointment twice', function () {
+    $client = User::factory()->client()->create();
+    $appointment = completedAppointmentFor($client);
+    $payload = [
+        'appointment_id' => $appointment->id,
+        'barber_rating' => 5,
+        'service_rating' => 5,
+    ];
+
+    $this->actingAs($client)->post(route('reviews.store'), $payload);
+    $this->actingAs($client)->post(route('reviews.store'), $payload)
+        ->assertSessionHasErrors('appointment_id');
+
+    expect(Review::count())->toBe(2);
+});
+
+test('client cannot review an appointment of another client or not completed', function () {
+    $client = User::factory()->client()->create();
+    $other = User::factory()->client()->create();
+    $foreign = completedAppointmentFor($other);
+
+    $this->actingAs($client)->post(route('reviews.store'), [
+        'appointment_id' => $foreign->id,
+        'barber_rating' => 5,
+        'service_rating' => 5,
+    ])->assertSessionHasErrors('appointment_id');
+
+    $pending = completedAppointmentFor($client);
+    $pending->update(['status' => \App\Enums\Status::Pending]);
+
+    $this->actingAs($client)->post(route('reviews.store'), [
+        'appointment_id' => $pending->id,
+        'barber_rating' => 5,
+        'service_rating' => 5,
+    ])->assertSessionHasErrors('appointment_id');
+
+    expect(Review::count())->toBe(0);
+});
+
+test('create form lists only own completed appointments not yet reviewed', function () {
+    $client = User::factory()->client()->create();
+    $mine = completedAppointmentFor($client);
+    completedAppointmentFor(User::factory()->client()->create());
+
+    $this->actingAs($client)->get(route('reviews.create'))
+        ->assertOk()
+        ->assertViewHas('appointments', fn ($a) => $a->pluck('id')->all() === [$mine->id]);
 });
 
 test('user can update their own review', function () {
@@ -49,8 +115,6 @@ test('user can update their own review', function () {
     ]);
 
     $response = $this->actingAs($client)->put(route('reviews.update', $review), [
-        'reviewable_type' => Service::class,
-        'reviewable_id' => $service->id,
         'rating' => 5,
         'comment' => 'Afinal adorei.',
     ]);
@@ -79,9 +143,7 @@ test('user cannot edit another user review', function () {
 
     $this->actingAs($intruder)
         ->put(route('reviews.update', $review), [
-            'reviewable_type' => Service::class,
-            'reviewable_id' => $service->id,
-            'rating' => 1,
+                'rating' => 1,
             'comment' => 'Sabotagem.',
         ])
         ->assertForbidden();

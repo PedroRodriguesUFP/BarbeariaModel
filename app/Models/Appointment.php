@@ -68,6 +68,12 @@ class Appointment extends Model
         return $this->hasMany(Payment::class);
     }
 
+    // Avaliações desta marcação (uma ao barbeiro e uma ao serviço).
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
     // ------------------------------------------------------------------
     // Criar e atualizar
     // ------------------------------------------------------------------
