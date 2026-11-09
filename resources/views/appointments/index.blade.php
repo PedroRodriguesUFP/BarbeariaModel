@@ -50,6 +50,12 @@
                             <td>
                                 <div class="row-actions">
                                     <a class="link" href="{{ route('appointments.show', $appointment->id) }}">Ver</a>
+                                    @if ($appointment->canBePaidBy(auth()->user()))
+                                        <form action="{{ route('payments.checkout', $appointment) }}" method="POST">
+                                            @csrf
+                                            <button class="link" type="submit">Pagar com cartão</button>
+                                        </form>
+                                    @endif
                                     <a class="link" href="{{ route('appointments.edit', $appointment->id) }}">Editar</a>
                                     <form
                                         action="{{ route('appointments.destroy', $appointment->id) }}"

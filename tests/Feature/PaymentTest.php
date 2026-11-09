@@ -40,15 +40,21 @@ test('client can pay their own appointment and payer_id is forced server side', 
 
     $response->assertRedirect(route('payments.index'));
 
+    // O cliente enviou amount = 25 e status = paid: tudo isto é ignorado.
+    // Fica pendente e com o preço do serviço.
     $this->assertDatabaseHas('payments', [
         'appointment_id' => $appointment->id,
         'payer_id' => $client->id,
+        'status' => 'pending',
     ]);
 
     $this->assertDatabaseMissing('payments', [
         'appointment_id' => $appointment->id,
         'payer_id' => $impersonated->id,
     ]);
+
+    $payment = Payment::where('appointment_id', $appointment->id)->sole();
+    expect((float) $payment->amount)->toBe((float) $appointment->service->price);
 });
 
 test('client cannot pay an appointment that is not theirs', function () {
@@ -165,4 +171,26 @@ test('admin can view and manage any payment', function () {
         ->assertRedirect(route('payments.index'));
 
     $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
+});
+
+test('client cannot edit or delete their own payment', function () {
+    $client = User::factory()->client()->create();
+
+    $payment = Payment::create([
+        'appointment_id' => makeAppointmentFor($client)->id,
+        'payer_id' => $client->id,
+        'amount' => 30,
+        'method' => 'cash',
+        'status' => 'paid',
+    ]);
+
+    $this->actingAs($client)
+        ->put(route('payments.update', $payment), ['method' => 'card'])
+        ->assertForbidden();
+
+    $this->actingAs($client)
+        ->delete(route('payments.destroy', $payment))
+        ->assertForbidden();
+
+    $this->assertDatabaseHas('payments', ['id' => $payment->id, 'method' => 'cash']);
 });
