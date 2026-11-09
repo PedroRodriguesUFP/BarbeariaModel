@@ -120,6 +120,8 @@
                         </span>
                     </span>
 
+                    <a class="link" href="{{ route('profile.edit') }}">Conta</a>
+
                     <form
                         action="{{ route('logout') }}"
                         method="POST"

@@ -16,35 +16,58 @@
                 @csrf
 
                 <div class="fields two">
+                    <!-- Tipo de Avaliação (US-2: Valores limpos, sem FQCN) -->
                     <div class="field">
                         <label for="reviewable_type">Avaliação sobre</label>
-                        <select id="reviewable_type" name="reviewable_type" required>
+                        <select id="reviewable_type" 
+                                name="reviewable_type" 
+                                class="{{ $errors->has('reviewable_type') ? 'is-invalid' : '' }}" 
+                                required>
                             <option value="">Selecionar tipo</option>
-                            <option value="App\Models\User" @selected(old('reviewable_type') === 'App\Models\User')>Barbeiro</option>
-                            <option value="App\Models\Service" @selected(old('reviewable_type') === 'App\Models\Service')>Serviço</option>
+                            <option value="barber" @selected(old('reviewable_type') === 'barber')>Barbeiro</option>
+                            <option value="service" @selected(old('reviewable_type') === 'service')>Serviço</option>
                         </select>
+                        @include('partials.field-error', ['field' => 'reviewable_type'])
                     </div>
 
+                    <!-- ID do Alvo -->
                     <div class="field">
                         <label for="reviewable_id">ID do barbeiro ou serviço</label>
-                        <input id="reviewable_id" name="reviewable_id" type="number" min="1" value="{{ old('reviewable_id') }}" required>
+                        <input id="reviewable_id" 
+                               name="reviewable_id" 
+                               type="number" 
+                               min="1" 
+                               value="{{ old('reviewable_id') }}" 
+                               class="{{ $errors->has('reviewable_id') ? 'is-invalid' : '' }}" 
+                               required>
+                        @include('partials.field-error', ['field' => 'reviewable_id'])
                     </div>
 
+                    <!-- Classificação -->
                     <div class="field full">
                         <label for="rating">Classificação</label>
-                        <select id="rating" name="rating" required>
+                        <select id="rating" 
+                                name="rating" 
+                                class="{{ $errors->has('rating') ? 'is-invalid' : '' }}" 
+                                required>
                             <option value="">Selecionar classificação</option>
-                            @foreach (range(1, 5) as $rating)
-                                <option value="{{ $rating }}" @selected((string) old('rating') === (string) $rating)>
-                                    {{ $rating }} / 5
+                            @foreach (range(1, 5) as $score)
+                                <option value="{{ $score }}" @selected((string) old('rating') === (string) $score)>
+                                    {{ $score }} / 5
                                 </option>
                             @endforeach
                         </select>
+                        @include('partials.field-error', ['field' => 'rating'])
                     </div>
 
+                    <!-- Comentário -->
                     <div class="field full">
                         <label for="comment">Comentário</label>
-                        <textarea id="comment" name="comment" rows="4">{{ old('comment') }}</textarea>
+                        <textarea id="comment" 
+                                  name="comment" 
+                                  rows="4" 
+                                  class="{{ $errors->has('comment') ? 'is-invalid' : '' }}">{{ old('comment') }}</textarea>
+                        @include('partials.field-error', ['field' => 'comment'])
                     </div>
                 </div>
 

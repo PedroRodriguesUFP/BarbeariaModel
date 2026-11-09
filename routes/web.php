@@ -4,10 +4,7 @@ use App\Http\Controllers\Admin\BarberController as AdminBarberController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AppointmentController;
-use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\GoogleLoginController;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\BarberController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\PaymentController;
@@ -41,25 +38,16 @@ Route::resource('services', ServiceController::class)
 // ======================================================
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
-
-    Route::get('/esqueci-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
-    Route::post('/esqueci-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
-    Route::get('/repor-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
-    Route::post('/repor-password', [ResetPasswordController::class, 'reset'])->name('password.update');
-
     Route::get('/auth/google', [GoogleLoginController::class, 'redirect'])->name('auth.google');
     Route::get('/auth/google/callback', [GoogleLoginController::class, 'callback'])->name('auth.google.callback');
 });
 
-// ======================================================
 // AUTENTICADO (qualquer role)
-// ======================================================
 
 Route::middleware('auth')->group(function () {
-
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::get('/dashboard', function () {
+        return redirect()->route(auth()->user()->homeRoute());
+    })->name('dashboard');
 
     // Marcações (a policy decide quem pode o quê)
     Route::patch('/appointments/{appointment}/confirm', [AppointmentController::class, 'confirm'])->name('appointments.confirm');
@@ -73,7 +61,6 @@ Route::middleware('auth')->group(function () {
 
     // ---------------- BARBEIRO ----------------
     Route::middleware('role:barber')->group(function () {
-
         Route::get('/calendar', [CalendarController::class, 'mine'])->name('calendar.mine');
         Route::get('/calendar/appointments/create', [CalendarController::class, 'create'])->name('calendar.appointments.create');
         Route::post('/calendar/appointments', [CalendarController::class, 'store'])->name('calendar.appointments.store');
@@ -91,8 +78,6 @@ Route::middleware('auth')->group(function () {
 
     // ---------------- ADMIN ----------------
     Route::middleware('role:admin')->group(function () {
-
-        // Calendário de qualquer barbeiro (já existia)
         Route::get('/barbers', [CalendarController::class, 'barbers'])->name('barbers.index');
         Route::get('/barbers/{barber}/calendar', [CalendarController::class, 'show'])->name('barbers.calendar');
 
@@ -106,3 +91,5 @@ Route::middleware('auth')->group(function () {
         });
     });
 });
+
+require __DIR__.'/auth.php';

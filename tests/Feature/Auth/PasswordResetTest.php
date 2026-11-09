@@ -16,12 +16,11 @@ test('sending a reset link notifies the user with a token', function () {
 
     $user = User::factory()->client()->create();
 
-    $response = $this->post(route('password.email'), [
+    $this->post(route('password.email'), [
         'email' => $user->email,
-    ]);
-
-    $response->assertRedirect();
-    $response->assertSessionHas('success');
+    ])
+        ->assertRedirect()
+        ->assertSessionHas('success');
 
     Notification::assertSentTo($user, ResetPassword::class);
 });
@@ -29,12 +28,10 @@ test('sending a reset link notifies the user with a token', function () {
 test('reset link request for an unknown email does not reveal that', function () {
     Notification::fake();
 
-    $response = $this->post(route('password.email'), [
+    $this->post(route('password.email'), [
         'email' => 'nobody@example.com',
-    ]);
+    ])->assertSessionHas('success');
 
-    // A app não deve distinguir entre email existente e inexistente.
-    $response->assertSessionHas('success');
     Notification::assertNothingSent();
 });
 
@@ -56,20 +53,19 @@ test('user can reset password with a valid token', function () {
 
     $token = Password::createToken($user);
 
-    $response = $this->post(route('password.update'), [
+    $this->post(route('password.update'), [
         'token' => $token,
         'email' => $user->email,
         'password' => 'new-password',
         'password_confirmation' => 'new-password',
-    ]);
-
-    $response->assertRedirect(route('login'));
-    $response->assertSessionHas('success');
+    ])
+        ->assertRedirect(route('login'))
+        ->assertSessionHas('success');
 
     $this->post(route('login'), [
         'email' => $user->email,
         'password' => 'new-password',
-    ])->assertRedirect(route('home'));
+    ])->assertRedirect(route($user->homeRoute()));
 });
 
 test('user cannot reset password with an invalid token', function () {
@@ -77,14 +73,12 @@ test('user cannot reset password with an invalid token', function () {
         'password' => 'old-password',
     ]);
 
-    $response = $this->post(route('password.update'), [
+    $this->post(route('password.update'), [
         'token' => 'invalid-token',
         'email' => $user->email,
         'password' => 'new-password',
         'password_confirmation' => 'new-password',
-    ]);
-
-    $response->assertSessionHasErrors('email');
+    ])->assertSessionHasErrors('email');
 
     $this->post(route('login'), [
         'email' => $user->email,

@@ -18,8 +18,16 @@ test('user can login with correct credentials', function () {
         'password' => 'password',
     ]);
 
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route($user->homeRoute()));
     $this->assertAuthenticatedAs($user);
+});
+
+test('dashboard redirects to the users home route', function () {
+    $user = User::factory()->client()->create();
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertRedirect(route($user->homeRoute()));
 });
 
 test('user cannot login with wrong password', function () {
@@ -32,7 +40,9 @@ test('user cannot login with wrong password', function () {
         'password' => 'wrong-password',
     ]);
 
-    $response->assertSessionHasErrors('email');
+    $response->assertSessionHasErrors([
+        'email' => 'Email ou palavra-passe incorretos.',
+    ]);
     $this->assertGuest();
 });
 
@@ -46,7 +56,9 @@ test('inactive user cannot login even with correct credentials', function () {
         'password' => 'password',
     ]);
 
-    $response->assertSessionHasErrors('email');
+    $response->assertSessionHasErrors([
+        'email' => 'Email ou palavra-passe incorretos.',
+    ]);
     $this->assertGuest();
 });
 

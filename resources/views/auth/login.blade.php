@@ -41,10 +41,11 @@
                         Esqueci-me da palavra-passe
                     </a>
                 </div>
+
                 <div class="form-actions" style="margin-top: 16px;">
-    <a class="btn ghost" href="{{ route('auth.google') }}">
-        Entrar com Google
-    </a>
+                    <a class="btn ghost" href="{{ route('auth.google') }}">
+                        Entrar com Google
+                    </a>
                 </div>
 
                 <div class="form-actions">

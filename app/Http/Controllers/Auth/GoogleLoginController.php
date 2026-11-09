@@ -18,6 +18,7 @@ class GoogleLoginController extends Controller
     public function callback()
     {
         $googleUser = Socialite::driver('google')
+
         ->stateless()
         ->user();
 

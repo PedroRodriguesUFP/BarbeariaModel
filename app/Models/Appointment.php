@@ -70,7 +70,7 @@ class Appointment extends Model
     string $customerId,
     string $serviceId,
     string $barberId,
-    ?string $time = null
+    ?string $time = null // hora opcional
     ): void {
     $this->date = $date;
     $this->status = Status::Pending;
