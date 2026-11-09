@@ -81,11 +81,11 @@ class Appointment extends Model
 
     // Cria uma marcação nova, sempre como pendente.
     public function makeAppointment(
-        DateTime $date,
-        string $customerId,
-        string $serviceId,
-        string $barberId,
-        ?string $time = null
+    DateTime $date,
+    string $customerId,
+    string $serviceId,
+    string $barberId,
+    ?string $time = null // hora opcional
     ): void {
         $this->date        = $date;
         $this->status      = Status::Pending;

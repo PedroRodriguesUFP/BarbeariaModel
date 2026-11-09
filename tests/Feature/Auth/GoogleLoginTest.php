@@ -3,6 +3,7 @@
 use App\Enums\UserRole;
 use App\Models\User;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\GoogleProvider;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
 // NOTA: estes testes pressupõem o pacote laravel/socialite instalado
@@ -12,7 +13,7 @@ use Laravel\Socialite\Two\User as SocialiteUser;
 
 function fakeGoogleUser(string $id, string $email, string $name): SocialiteUser
 {
-    $socialiteUser = new SocialiteUser();
+    $socialiteUser = new SocialiteUser;
     $socialiteUser->id = $id;
     $socialiteUser->email = $email;
     $socialiteUser->name = $name;
@@ -22,7 +23,7 @@ function fakeGoogleUser(string $id, string $email, string $name): SocialiteUser
 
 function mockSocialiteReturning(SocialiteUser $user): void
 {
-    $provider = Mockery::mock(\Laravel\Socialite\Two\GoogleProvider::class);
+    $provider = Mockery::mock(GoogleProvider::class);
     $provider->shouldReceive('stateless')->andReturnSelf();
     $provider->shouldReceive('user')->andReturn($user);
 
@@ -35,13 +36,16 @@ test('new google user without an account is created as a client', function () {
     );
 
     $response = $this->get(route('auth.google.callback'));
+    $user = User::where('email', 'novo@example.com')->firstOrFail();
 
-    $response->assertRedirect(route('appointments.index'));
+    $response->assertRedirect(route($user->homeRoute()));
 
     $this->assertDatabaseHas('users', [
         'email' => 'novo@example.com',
         'google_id' => 'google-123',
         'role' => UserRole::Client->value,
+        'password' => null,
+        'active' => true,
     ]);
 
     $this->assertAuthenticated();
@@ -58,7 +62,7 @@ test('existing user is linked to google by matching email', function () {
     );
 
     $this->get(route('auth.google.callback'))
-        ->assertRedirect(route('appointments.index'));
+        ->assertRedirect(route($user->homeRoute()));
 
     $this->assertAuthenticatedAs($user->fresh());
     expect($user->fresh()->google_id)->toBe('google-456');
@@ -74,7 +78,7 @@ test('user already linked by google id logs in directly', function () {
     );
 
     $this->get(route('auth.google.callback'))
-        ->assertRedirect(route('appointments.index'));
+        ->assertRedirect(route($user->homeRoute()));
 
     $this->assertAuthenticatedAs($user);
 });
