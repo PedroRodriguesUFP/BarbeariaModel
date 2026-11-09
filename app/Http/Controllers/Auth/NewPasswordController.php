@@ -5,14 +5,22 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
-class ResetPasswordController extends Controller
+class NewPasswordController extends Controller
 {
-    public function showResetForm(Request $request, string $token)
+    /**
+     * Display the password reset view.
+     */
+    public function create(Request $request, string $token): View
     {
         return view('auth.reset-password', [
             'token' => $token,
@@ -20,32 +28,26 @@ class ResetPasswordController extends Controller
         ]);
     }
 
-    public function reset(Request $request)
+    /**
+     * Handle an incoming new password request.
+     *
+     * @throws ValidationException
+     */
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', 'min:8'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $status = Password::reset(
-            $request->only(
-                'email',
-                'password',
-                'password_confirmation',
-                'token'
-            ),
-            function (User $user, string $password) {
-
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (User $user) use ($request): void {
                 $user->forceFill([
-                    'password' => $password,
-                ]);
-
-                $user->setRememberToken(
-                    Str::random(60)
-                );
-
-                $user->save();
+                    'password' => Hash::make($request->password),
+                    'remember_token' => Str::random(60),
+                ])->save();
 
                 DB::table('sessions')
                     ->where('user_id', $user->id)

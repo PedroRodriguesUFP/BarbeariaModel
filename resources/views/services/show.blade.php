@@ -28,6 +28,8 @@
         </div>
     </header>
 
+    <x-service-carousel :service="$service" />
+
     <div class="page-body narrow">
         <div class="detail" data-tilt>
             <dl>

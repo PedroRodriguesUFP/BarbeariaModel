@@ -35,20 +35,31 @@
                     <div class="pole"></div>
                 </div>
 
-                @php($orbit = $services->take(6)->values())
+                @php
+                    $orbit = [
+                        ['maquina', 'Máquina e degradê'],
+                        ['degrade', 'Textura e nuca'],
+                        ['barba', 'Barba e contornos'],
+                    ];
+                @endphp
 
-                @if ($orbit->isNotEmpty())
-                    <ul class="ring" style="--n: {{ $orbit->count() }}">
-                        @foreach ($orbit as $i => $service)
-                            <li style="--i: {{ $i }}">
-                                <span class="chip">
-                                    {{ $service->name }}
-                                    <b>{{ number_format($service->price, 0, ',', ' ') }} €</b>
-                                </span>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
+                <ul class="ring" style="--n: {{ count($orbit) }}">
+                    @foreach ($orbit as $i => [$img, $label])
+                        <li style="--i: {{ $i }}">
+                            <figure class="shot">
+                                <img
+                                    src="{{ asset('img/barbearia/'.$img.'.jpg') }}"
+                                    alt=""
+                                    width="560"
+                                    height="700"
+                                    loading="eager"
+                                    decoding="async"
+                                >
+                                <figcaption>{{ $label }}</figcaption>
+                            </figure>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
         </div>
     </section>

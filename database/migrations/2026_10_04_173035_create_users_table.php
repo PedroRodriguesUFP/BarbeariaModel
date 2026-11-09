@@ -15,8 +15,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('phone')->nullable();
             $table->text('bio')->nullable();
-
-            $table->string('password');
+            $table->string('password')->nullable();
             $table->string('role');
 
             $table->boolean('active')->default(true);
