@@ -92,6 +92,8 @@
                 </tbody>
             </table>
         </div>
+
+        {{ $payments->links() }}
     </div>
 </div>
 @endsection

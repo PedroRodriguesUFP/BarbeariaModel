@@ -53,6 +53,10 @@
                         Entrar
                     </button>
 
+                    <a class="btn ghost" href="{{ route('register') }}">
+                        Criar conta
+                    </a>
+
                     <a class="btn ghost" href="{{ route('home') }}">
                         Voltar
                     </a>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Http\Requests\GuardarPagamentoRequest;
 use App\Models\Appointment;
 use App\Models\Payment;
 use App\Services\StripeGateway;
@@ -11,7 +12,6 @@ use Stripe\Exception\ApiConnectionException;
 use App\Services\StripePaymentRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -54,15 +54,15 @@ class PaymentController extends Controller
         return view('payments.index', compact('payments'));
     }
 
-    public function show($id)
+    public function show(Payment $payment)
     {
-        $payment = Payment::with([
+        $this->authorize('view', $payment);
+
+        $payment->load([
             'payer',
             'appointment.barber',
             'appointment.service',
-        ])->findOrFail($id);
-
-        $this->authorize('view', $payment);
+        ]);
 
         return view('payments.show', compact('payment'));
     }
@@ -94,11 +94,10 @@ class PaymentController extends Controller
         return view('payments.create', compact('appointments'));
     }
 
-    public function store(Request $request)
+    // A validação e a autorização estão em GuardarPagamentoRequest.
+    public function store(GuardarPagamentoRequest $request)
     {
-        $this->authorize('create', Payment::class);
-
-        $data = $this->validatePayment($request);
+        $data = $request->validated();
 
         $appointment = Appointment::with('service')
             ->findOrFail($data['appointment_id']);
@@ -142,31 +141,17 @@ class PaymentController extends Controller
     // Editar
     // ------------------------------------------------------------------
 
-    public function edit($id)
+    public function edit(Payment $payment)
     {
-        $payment = Payment::findOrFail($id);
-
         $this->authorize('update', $payment);
 
         return view('payments.edit', compact('payment'));
     }
 
-    public function update(Request $request, $id)
+    // Só o admin edita pagamentos: a policy (chamada no request) recusa os outros com 403.
+    public function update(GuardarPagamentoRequest $request, Payment $payment)
     {
-        $payment = Payment::findOrFail($id);
-
-        $this->authorize('update', $payment);
-
-        $data = $this->validatePayment($request);
-
-        // Quem não é admin só pode mudar a forma de pagamento.
-        if (! auth()->user()->isAdmin()) {
-            $payment->update(['method' => $data['method']]);
-
-            return redirect()
-                ->route('payments.index')
-                ->with('success', 'Pagamento atualizado com sucesso.');
-        }
+        $data = $request->validated();
 
         $appointment = Appointment::findOrFail($data['appointment_id']);
 
@@ -195,10 +180,8 @@ class PaymentController extends Controller
     // Apagar
     // ------------------------------------------------------------------
 
-    public function destroy($id)
+    public function destroy(Payment $payment)
     {
-        $payment = Payment::findOrFail($id);
-
         $this->authorize('delete', $payment);
 
         $payment->delete();
@@ -334,27 +317,5 @@ class PaymentController extends Controller
         return $appointment->payments()
             ->where('status', PaymentStatus::Paid->value)
             ->exists();
-    }
-
-    /**
-     * Validação para criar e editar.
-     * O admin preenche tudo. Os outros só enviam marcação e forma de pagamento.
-     */
-    private function validatePayment(Request $request): array
-    {
-        $rules = [
-            'appointment_id' => ['required', 'exists:appointments,id'],
-            'method'         => ['required', Rule::enum(PaymentMethod::class)],
-        ];
-
-        if (auth()->user()->isAdmin()) {
-            $rules += [
-                'amount'  => ['required', 'numeric', 'min:0'],
-                'status'  => ['required', Rule::enum(PaymentStatus::class)],
-                'paid_at' => ['nullable', 'date'],
-            ];
-        }
-
-        return $request->validate($rules);
     }
 }

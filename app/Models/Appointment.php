@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Enums\PaymentStatus;
 use App\Enums\Status;
+use App\Enums\UserRole;
 use DateTime;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -79,6 +81,47 @@ class Appointment extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    // ------------------------------------------------------------------
+    // Escopos: filtros com nome, reutilizáveis nas listagens
+    // ------------------------------------------------------------------
+
+    // O que cada utilizador pode ver: o cliente só as suas, o barbeiro só as
+    // que tem a seu cargo, o admin vê todas.
+    public function scopeVisibleTo(Builder $query, User $user): void
+    {
+        if ($user->role === UserRole::Client) {
+            $query->where('customer_id', $user->id);
+        } elseif ($user->role === UserRole::Barber) {
+            $query->where('barber_id', $user->id);
+        }
+    }
+
+    // Pesquisa livre: nome do cliente, do barbeiro, do serviço
+    // ou do cliente sem conta (walk-in).
+    public function scopeSearch(Builder $query, ?string $term): void
+    {
+        if ($term === null || $term === '') {
+            return;
+        }
+
+        $like = '%' . $term . '%';
+
+        $query->where(function (Builder $q) use ($like) {
+            $q->whereHas('customer', fn (Builder $c) => $c->whereLike('name', $like))
+                ->orWhereHas('barber', fn (Builder $b) => $b->whereLike('name', $like))
+                ->orWhereHas('service', fn (Builder $s) => $s->whereLike('name', $like))
+                ->orWhereLike('walk_in_name', $like);
+        });
+    }
+
+    // Só as marcações com este estado (null = sem filtro).
+    public function scopeWithStatus(Builder $query, ?Status $status): void
+    {
+        if ($status !== null) {
+            $query->where('status', $status->value);
+        }
     }
 
     // ------------------------------------------------------------------
