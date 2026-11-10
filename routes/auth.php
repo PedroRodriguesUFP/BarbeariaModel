@@ -5,10 +5,18 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    // Registo público: cria sempre um cliente. O throttle trava criação em massa de contas.
+    Route::get('/registar', [RegisteredUserController::class, 'create'])
+        ->name('register');
+
+    Route::post('/registar', [RegisteredUserController::class, 'store'])
+        ->middleware('throttle:6,1');
+
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 

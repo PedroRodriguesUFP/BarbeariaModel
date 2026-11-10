@@ -4,6 +4,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -28,4 +30,19 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Regista os acessos recusados (403) de quem tem sessão iniciada.
+        // Devolve null para o Laravel continuar a mostrar a página 403 normal.
+        $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
+            if ($e->getStatusCode() === 403 && $request->user()) {
+                Log::channel('auth')->notice('Acesso recusado', [
+                    'user_id' => $request->user()->id,
+                    'metodo'  => $request->method(),
+                    'url'     => $request->path(),
+                    'ip'      => $request->ip(),
+                ]);
+            }
+
+            return null;
+        });
     })->create();

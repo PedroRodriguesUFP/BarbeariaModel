@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Status;
 use App\Enums\UserRole;
+use App\Http\Requests\GuardarMarcacaoRequest;
 use App\Models\Appointment;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -31,38 +32,53 @@ class AppointmentController extends Controller
     // Listagem e detalhe
     // ------------------------------------------------------------------
 
+    // Parâmetros aceites (todos opcionais):
+    //   ?q=texto       pesquisa por cliente, barbeiro ou serviço
+    //   ?estado=...    só marcações com esse estado
+    //   ?barbeiro=ID   só marcações desse barbeiro
+    //   ?ordem=...     "data" (por defeito) ou "estado"
     public function index(Request $request)
     {
         $this->authorize('viewAny', Appointment::class);
 
-        $user = $request->user();
+        // A ordenação entra no SQL, por isso só aceitamos valores de uma lista branca.
+        $ordem = $request->string('ordem')->toString();
+        $ordem = in_array($ordem, ['data', 'estado'], true) ? $ordem : 'data';
 
-        // Carregamos já as relações para a view não fazer uma query por linha.
-        $query = Appointment::with(['customer', 'barber', 'service', 'payments']);
+        // O estado também só vale se for um estado que existe.
+        $estado = Status::tryFrom($request->string('estado')->toString());
 
-        // Cliente e barbeiro só veem as suas. O admin não leva filtro.
-        if ($user->role === UserRole::Client) {
-            $query->where('customer_id', $user->id);
-        } elseif ($user->role === UserRole::Barber) {
-            $query->where('barber_id', $user->id);
+        // Carregamos já as relações para a vista não fazer uma consulta por linha.
+        $query = Appointment::with(['customer', 'barber', 'service', 'payments'])
+            ->visibleTo($request->user())
+            ->search($request->string('q')->toString())
+            ->withStatus($estado)
+            ->when(
+                $request->filled('barbeiro'),
+                fn ($q) => $q->where('barber_id', $request->integer('barbeiro'))
+            );
+
+        if ($ordem === 'estado') {
+            $query->orderBy('status');
         }
 
-        // 15 por página, as mais recentes primeiro.
-        // Na view, usar {{ $appointments->links() }} para os botões de página.
         $appointments = $query
             ->orderByDesc('date')
             ->orderBy('time')
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString(); // mantém os filtros ao mudar de página
 
-        return view('appointments.index', compact('appointments'));
+        $barbers  = User::where('role', UserRole::Barber->value)->orderBy('name')->get(['id', 'name']);
+        $statuses = Status::cases();
+
+        return view('appointments.index', compact('appointments', 'barbers', 'statuses'));
     }
 
-    public function show($id)
+    public function show(Appointment $appointment)
     {
-        $appointment = Appointment::with(['customer', 'barber', 'service', 'payments'])
-            ->findOrFail($id);
-
         $this->authorize('view', $appointment);
+
+        $appointment->load(['customer', 'barber', 'service', 'payments']);
 
         return view('appointments.show', compact('appointment'));
     }
@@ -78,11 +94,10 @@ class AppointmentController extends Controller
         return view('appointments.create', $this->formData());
     }
 
-    public function store(Request $request)
+    // A validação e a autorização estão em GuardarMarcacaoRequest.
+    public function store(GuardarMarcacaoRequest $request)
     {
-        $this->authorize('create', Appointment::class);
-
-        $data = $this->validateAppointment($request);
+        $data = $request->validated();
 
         $barber  = User::findOrFail($data['barber_id']);
         $service = Service::findOrFail($data['service_id']);
@@ -90,12 +105,10 @@ class AppointmentController extends Controller
         $this->ensureBarberIsAvailable($barber, $service, $data['date'], $data['time']);
 
         // O cliente marca para si próprio.
-        // O admin tem de escolher para quem está a marcar.
-        $customerId = $request->user()->id;
-
-        if ($request->user()->isAdmin()) {
-            $customerId = $this->validateCustomerId($request);
-        }
+        // O admin escolheu o cliente no formulário (já validado no request).
+        $customerId = $request->user()->isAdmin()
+            ? $data['customer_id']
+            : $request->user()->id;
 
         Appointment::create([
             'date'        => $data['date'],
@@ -114,10 +127,8 @@ class AppointmentController extends Controller
     // Editar
     // ------------------------------------------------------------------
 
-    public function edit($id)
+    public function edit(Appointment $appointment)
     {
-        $appointment = Appointment::findOrFail($id);
-
         $this->authorize('update', $appointment);
 
         return view(
@@ -126,13 +137,9 @@ class AppointmentController extends Controller
         );
     }
 
-    public function update(Request $request, $id)
+    public function update(GuardarMarcacaoRequest $request, Appointment $appointment)
     {
-        $appointment = Appointment::findOrFail($id);
-
-        $this->authorize('update', $appointment);
-
-        $data = $this->validateAppointment($request);
+        $data = $request->validated();
 
         $barber  = User::findOrFail($data['barber_id']);
         $service = Service::findOrFail($data['service_id']);
@@ -164,10 +171,8 @@ class AppointmentController extends Controller
     // Apagar
     // ------------------------------------------------------------------
 
-    public function destroy($id)
+    public function destroy(Appointment $appointment)
     {
-        $appointment = Appointment::findOrFail($id);
-
         $this->authorize('delete', $appointment);
 
         $appointment->delete();
@@ -255,42 +260,6 @@ class AppointmentController extends Controller
                 ->orderBy('name')
                 ->get(),
         ];
-    }
-
-    /**
-     * Regras de validação iguais em criar e editar.
-     * Devolve só os campos já validados.
-     */
-    private function validateAppointment(Request $request): array
-    {
-        return $request->validate([
-            'date' => ['required', 'date', 'after_or_equal:today'],
-            'time' => ['required', 'date_format:H:i'],
-
-            // O utilizador escolhido tem mesmo de ser um barbeiro.
-            'barber_id' => [
-                'required',
-                Rule::exists('users', 'id')->where('role', UserRole::Barber->value),
-            ],
-
-            'service_id' => ['required', 'exists:services,id'],
-        ]);
-    }
-
-    /**
-     * Validação do cliente escolhido pelo admin.
-     * Tem de existir e ter o papel de cliente.
-     */
-    private function validateCustomerId(Request $request): int
-    {
-        $validated = $request->validate([
-            'customer_id' => [
-                'required',
-                Rule::exists('users', 'id')->where('role', UserRole::Client->value),
-            ],
-        ]);
-
-        return $validated['customer_id'];
     }
 
     /**

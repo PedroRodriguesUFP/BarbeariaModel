@@ -15,6 +15,51 @@
     <div class="page-body">
         @include('partials.messages')
 
+        {{-- Filtros: vão no URL (?q=...&estado=...), por isso a paginação não os perde. --}}
+        <form method="GET" action="{{ route('appointments.index') }}" class="form-card" style="margin-bottom: 1rem;">
+            <div class="fields two">
+                <div class="field">
+                    <label for="q">Pesquisar</label>
+                    <input id="q" name="q" type="search" value="{{ request('q') }}" placeholder="Cliente, barbeiro ou serviço">
+                </div>
+
+                <div class="field">
+                    <label for="estado">Estado</label>
+                    <select id="estado" name="estado">
+                        <option value="">Todos</option>
+                        @foreach ($statuses as $status)
+                            <option value="{{ $status->value }}" @selected(request('estado') === $status->value)>{{ $status->value }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                @unless (auth()->user()->isBarber())
+                    <div class="field">
+                        <label for="barbeiro">Barbeiro</label>
+                        <select id="barbeiro" name="barbeiro">
+                            <option value="">Todos</option>
+                            @foreach ($barbers as $barber)
+                                <option value="{{ $barber->id }}" @selected((int) request('barbeiro') === $barber->id)>{{ $barber->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endunless
+
+                <div class="field">
+                    <label for="ordem">Ordenar por</label>
+                    <select id="ordem" name="ordem">
+                        <option value="data" @selected(request('ordem', 'data') === 'data')>Data</option>
+                        <option value="estado" @selected(request('ordem') === 'estado')>Estado</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn small" type="submit">Filtrar</button>
+                <a class="btn ghost small" href="{{ route('appointments.index') }}">Limpar</a>
+            </div>
+        </form>
+
         <div class="table-wrap">
             <table class="table">
                 <thead>
@@ -49,23 +94,29 @@
                             </td>
                             <td>
                                 <div class="row-actions">
-                                    <a class="link" href="{{ route('appointments.show', $appointment->id) }}">Ver</a>
+                                    @can('view', $appointment)
+                                        <a class="link" href="{{ route('appointments.show', $appointment) }}">Ver</a>
+                                    @endcan
                                     @if ($appointment->canBePaidBy(auth()->user()))
                                         <form action="{{ route('payments.checkout', $appointment) }}" method="POST">
                                             @csrf
                                             <button class="link" type="submit">Pagar com cartão</button>
                                         </form>
                                     @endif
-                                    <a class="link" href="{{ route('appointments.edit', $appointment->id) }}">Editar</a>
-                                    <form
-                                        action="{{ route('appointments.destroy', $appointment->id) }}"
-                                        method="POST"
-                                        onsubmit="return confirm('Eliminar esta marcação?')"
-                                    >
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="link danger" type="submit">Eliminar</button>
-                                    </form>
+                                    @can('update', $appointment)
+                                        <a class="link" href="{{ route('appointments.edit', $appointment) }}">Editar</a>
+                                    @endcan
+                                    @can('delete', $appointment)
+                                        <form
+                                            action="{{ route('appointments.destroy', $appointment) }}"
+                                            method="POST"
+                                            onsubmit="return confirm('Eliminar esta marcação?')"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="link danger" type="submit">Eliminar</button>
+                                        </form>
+                                    @endcan
                                 </div>
                             </td>
                         </tr>
@@ -79,6 +130,8 @@
                 </tbody>
             </table>
         </div>
+
+        {{ $appointments->links() }}
     </div>
 </div>
 @endsection

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GuardarServicoRequest;
 use App\Models\Service;
-use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
@@ -22,15 +22,10 @@ class ServiceController extends Controller
     }
 
     // Valida e guarda um novo serviço.
-    public function store(Request $request)
+    // Validação e autorização: GuardarServicoRequest.
+    public function store(GuardarServicoRequest $request)
     {
-        $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'price' => 'required|numeric|min:0',
-        'duration_minutes' => 'required|integer|min:1',
-        'category' => 'required|string',
-    ]);
+        $validated = $request->validated();
 
     Service::create($validated);
 
@@ -52,15 +47,9 @@ class ServiceController extends Controller
     }
 
     // Valida e atualiza um serviço.
-    public function update(Request $request, Service $service)
+    public function update(GuardarServicoRequest $request, Service $service)
     {
-         $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'price' => 'required|numeric|min:0',
-        'duration_minutes' => 'required|integer|min:1',
-        'category' => 'required|string',
-    ]);
+         $validated = $request->validated();
 
     $service->update($validated);
 

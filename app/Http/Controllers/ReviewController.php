@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Status;
+use App\Http\Requests\GuardarAvaliacaoRequest;
 use App\Models\Appointment;
 use App\Models\Review;
 use App\Models\Service;
@@ -47,17 +48,9 @@ class ReviewController extends Controller
     }
 
     // Cria duas avaliações: uma ao barbeiro e outra ao serviço da marcação.
-    public function store(Request $request)
+    public function store(GuardarAvaliacaoRequest $request)
     {
-        $this->authorize('create', Review::class);
-
-        $data = $request->validate([
-            'appointment_id' => ['required', 'integer'],
-            'barber_rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'barber_comment' => ['nullable', 'string', 'max:1000'],
-            'service_rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'service_comment' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $data = $request->validated();
 
         $appointment = Appointment::where('customer_id', auth()->id())
             ->where('status', Status::Completed)
@@ -100,14 +93,11 @@ class ReviewController extends Controller
             ->with('success', 'Avaliações criadas com sucesso.');
     }
 
-    public function show($id)
+    public function show(Review $review)
     {
-        $review = Review::with([
-            'reviewer',
-            'reviewable',
-        ])->findOrFail($id);
-
         $this->authorize('view', $review);
+
+        $review->load(['reviewer', 'reviewable']);
 
         return view(
             'reviews.show',
@@ -115,11 +105,11 @@ class ReviewController extends Controller
         );
     }
 
-    public function edit($id)
+    public function edit(Review $review)
     {
-        $review = Review::with('reviewable')->findOrFail($id);
-
         $this->authorize('update', $review);
+
+        $review->load('reviewable');
 
         return view(
             'reviews.edit',
@@ -128,16 +118,9 @@ class ReviewController extends Controller
     }
 
     // O alvo da avaliação (barbeiro/serviço) não muda: só nota e comentário.
-    public function update(Request $request, $id)
+    public function update(GuardarAvaliacaoRequest $request, Review $review)
     {
-        $review = Review::findOrFail($id);
-
-        $this->authorize('update', $review);
-
-        $data = $request->validate([
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'comment' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $data = $request->validated();
 
         $review->update($data);
 
@@ -146,10 +129,8 @@ class ReviewController extends Controller
             ->with('success', 'Avaliação atualizada com sucesso.');
     }
 
-    public function destroy($id)
+    public function destroy(Review $review)
     {
-        $review = Review::findOrFail($id);
-
         $this->authorize('delete', $review);
 
         $review->delete();

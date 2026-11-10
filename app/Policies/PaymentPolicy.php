@@ -8,19 +8,10 @@ use App\Models\User;
 
 class PaymentPolicy
 {
-    public function before(User $user, string $ability): ?bool
-    {
-        if ($user->role === UserRole::Admin) {
-            return true;
-        }
-
-        return null;
-    }
-
     public function viewAny(User $user): bool
     {
-        // O controller filtra a listagem pelos pagamentos
-        // do próprio utilizador; o admin vê tudo via before().
+        // O controller filtra a listagem pelos pagamentos do próprio utilizador.
+        // O admin vê tudo: passa no Gate::before (AppServiceProvider).
         return true;
     }
 
@@ -34,7 +25,7 @@ class PaymentPolicy
         return $user->role === UserRole::Client;
     }
 
-    // Só o admin edita ou apaga pagamentos (o before() acima já o autoriza).
+    // Só o admin edita ou apaga pagamentos (passa no Gate::before).
     // O cliente vê os seus pagamentos, mas não os altera: senão podia
     // apagar ou mudar um pagamento já pago.
     public function update(User $user, Payment $payment): bool

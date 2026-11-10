@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
@@ -32,6 +33,13 @@ class Service extends Model
         return [
             'category' => Category::class,
         ];
+    }
+
+    // Marcações que escolheram este serviço.
+    // O painel do admin usa-a para o top de serviços (withCount).
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class);
     }
 
     // Avaliações feitas a este serviço.
