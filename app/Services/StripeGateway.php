@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use Stripe\Checkout\Session;
 use Stripe\Event;
+use Stripe\HttpClient\CurlClient;
 use Stripe\Stripe;
 use Stripe\Webhook;
 
@@ -72,8 +73,20 @@ class StripeGateway
         );
     }
 
+    /**
+     * Chave + tempos de espera + tentativas.
+     * - timeout: tempo máximo à espera da resposta da Stripe.
+     * - connect_timeout: tempo máximo para estabelecer a ligação.
+     * - retries: a biblioteca repete sozinha em falhas de rede (com
+     *   chave de idempotência, por isso não cobra duas vezes).
+     */
     private function configureApiKey(): void
     {
         Stripe::setApiKey(config('services.stripe.secret'));
+        Stripe::setMaxNetworkRetries((int) config('services.stripe.retries'));
+
+        $client = CurlClient::instance();
+        $client->setTimeout((int) config('services.stripe.timeout'));
+        $client->setConnectTimeout((int) config('services.stripe.connect_timeout'));
     }
 }

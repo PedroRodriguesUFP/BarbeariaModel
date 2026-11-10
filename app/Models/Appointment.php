@@ -75,6 +75,12 @@ class Appointment extends Model
         return $this->hasMany(Payment::class);
     }
 
+    // Avaliações desta marcação (uma ao barbeiro e uma ao serviço).
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
     // ------------------------------------------------------------------
     // Criar e atualizar
     // ------------------------------------------------------------------
@@ -159,10 +165,8 @@ class Appointment extends Model
     // Só se cancela o que ainda está em aberto.
     public function canBeCancelled(): bool
     {
-        
-        if ($this->status == Status::Pending || $this->status === Status::Confirmed) {
-            return true;
-        }
+        return $this->isPending() || $this->isConfirmed();
+    }
 
     // Muda o estado diretamente, sem verificar a transição.
     public function updateStatus(Status $newStatus): void

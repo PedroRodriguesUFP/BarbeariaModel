@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use App\Models\Appointment;
 use App\Models\Payment;
 use App\Services\StripeGateway;
+use Stripe\Exception\ApiConnectionException;
 use App\Services\StripePaymentRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -239,6 +240,11 @@ class PaymentController extends Controller
             );
 
             return redirect()->away($session->url);
+        } catch (ApiConnectionException $e) {
+            // Timeout ou falha de rede, mesmo depois das tentativas automáticas.
+            Log::warning('Stripe sem resposta (checkout): ' . $e->getMessage());
+
+            return back()->with('error', 'O serviço de pagamento demorou demasiado a responder. Tenta novamente daqui a pouco.');
         } catch (\Exception $e) {
             // O detalhe técnico vai para o log; o cliente vê só uma mensagem simples.
             Log::error('Erro Stripe: ' . $e->getMessage());
@@ -273,6 +279,10 @@ class PaymentController extends Controller
 
         try {
             $session = $stripe->retrieveSession($sessionId);
+        } catch (ApiConnectionException $e) {
+            Log::warning('Stripe sem resposta (confirmação): ' . $e->getMessage());
+
+            return $this->paymentNotConfirmed();
         } catch (\Exception $e) {
             Log::error('Erro Stripe ao confirmar pagamento: ' . $e->getMessage());
 

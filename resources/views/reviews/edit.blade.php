@@ -17,17 +17,9 @@
                 @method('PUT')
 
                 <div class="fields two">
-                    <div class="field">
-                        <label for="reviewable_type">Avaliação sobre</label>
-                        <select id="reviewable_type" name="reviewable_type" required>
-                            <option value="App\Models\User" @selected(old('reviewable_type', $review->reviewable_type) === 'App\Models\User')>Barbeiro</option>
-                            <option value="App\Models\Service" @selected(old('reviewable_type', $review->reviewable_type) === 'App\Models\Service')>Serviço</option>
-                        </select>
-                    </div>
-
-                    <div class="field">
-                        <label for="reviewable_id">ID do barbeiro ou serviço</label>
-                        <input id="reviewable_id" name="reviewable_id" type="number" min="1" value="{{ old('reviewable_id', $review->reviewable_id) }}" required>
+                    <div class="field full">
+                        <label>Avaliação sobre</label>
+                        <p>{{ $review->isAboutBarber() ? 'Barbeiro' : 'Serviço' }}: {{ $review->reviewable?->name ?? '-' }}</p>
                     </div>
 
                     <div class="field full">

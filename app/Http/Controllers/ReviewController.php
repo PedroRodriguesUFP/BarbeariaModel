@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Status;
+use App\Models\Appointment;
 use App\Models\Review;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ReviewController extends Controller
@@ -26,83 +28,76 @@ class ReviewController extends Controller
         );
     }
 
-    public function create()
+    // Marcações concluídas do cliente que ainda não foram avaliadas.
+    public function create(Request $request)
     {
         $this->authorize('create', Review::class);
 
-        return view('reviews.create');
+        $appointments = Appointment::with(['service', 'barber'])
+            ->where('customer_id', auth()->id())
+            ->where('status', Status::Completed)
+            ->whereDoesntHave('reviews')
+            ->orderByDesc('date')
+            ->orderByDesc('time')
+            ->get();
+
+        $selectedId = $request->query('appointment');
+
+        return view('reviews.create', compact('appointments', 'selectedId'));
     }
 
+    // Cria duas avaliações: uma ao barbeiro e outra ao serviço da marcação.
     public function store(Request $request)
     {
         $this->authorize('create', Review::class);
 
-        $request->validate([
-            'reviewable_type' => [
-                'required',
-                Rule::in([
-                    User::class,
-                    Service::class,
-                ]),
-            ],
-
-            'reviewable_id' => [
-                'required',
-                'integer',
-                'min:1',
-            ],
-
-            'rating' => [
-                'required',
-                'integer',
-                'min:1',
-                'max:5',
-            ],
-
-            'comment' => [
-                'nullable',
-                'string',
-            ],
+        $data = $request->validate([
+            'appointment_id' => ['required', 'integer'],
+            'barber_rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'barber_comment' => ['nullable', 'string', 'max:1000'],
+            'service_rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'service_comment' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $reviewableType = $request->input('reviewable_type');
+        $appointment = Appointment::where('customer_id', auth()->id())
+            ->where('status', Status::Completed)
+            ->find($data['appointment_id']);
 
-        $reviewable = $reviewableType::find(
-            $request->input('reviewable_id')
-        );
-
-        if (! $reviewable) {
+        if (! $appointment) {
             throw ValidationException::withMessages([
-                'reviewable_id' =>
-                    'O barbeiro ou serviço selecionado não existe.',
+                'appointment_id' => 'Só podes avaliar marcações tuas já concluídas.',
             ]);
         }
 
-        // Se o alvo for um User, tem obrigatoriamente de ser barbeiro.
-        if (
-            $reviewable instanceof User &&
-            ! $reviewable->isBarber()
-        ) {
+        if ($appointment->reviews()->exists()) {
             throw ValidationException::withMessages([
-                'reviewable_id' =>
-                    'O utilizador selecionado não é barbeiro.',
+                'appointment_id' => 'Esta marcação já foi avaliada.',
             ]);
         }
 
-        Review::create([
-            'reviewer_id' => auth()->id(),
-            'reviewable_type' => $reviewableType,
-            'reviewable_id' => $request->input('reviewable_id'),
-            'rating' => $request->input('rating'),
-            'comment' => $request->input('comment'),
-        ]);
+        DB::transaction(function () use ($appointment, $data) {
+            Review::create([
+                'reviewer_id' => auth()->id(),
+                'appointment_id' => $appointment->id,
+                'reviewable_type' => (new User)->getMorphClass(),
+                'reviewable_id' => $appointment->barber_id,
+                'rating' => $data['barber_rating'],
+                'comment' => $data['barber_comment'] ?? null,
+            ]);
+
+            Review::create([
+                'reviewer_id' => auth()->id(),
+                'appointment_id' => $appointment->id,
+                'reviewable_type' => (new Service)->getMorphClass(),
+                'reviewable_id' => $appointment->service_id,
+                'rating' => $data['service_rating'],
+                'comment' => $data['service_comment'] ?? null,
+            ]);
+        });
 
         return redirect()
             ->route('reviews.index')
-            ->with(
-                'success',
-                'Avaliação criada com sucesso.'
-            );
+            ->with('success', 'Avaliações criadas com sucesso.');
     }
 
     public function show($id)
@@ -122,7 +117,7 @@ class ReviewController extends Controller
 
     public function edit($id)
     {
-        $review = Review::findOrFail($id);
+        $review = Review::with('reviewable')->findOrFail($id);
 
         $this->authorize('update', $review);
 
@@ -132,77 +127,23 @@ class ReviewController extends Controller
         );
     }
 
+    // O alvo da avaliação (barbeiro/serviço) não muda: só nota e comentário.
     public function update(Request $request, $id)
     {
         $review = Review::findOrFail($id);
 
         $this->authorize('update', $review);
 
-        $request->validate([
-            'reviewable_type' => [
-                'required',
-                Rule::in([
-                    User::class,
-                    Service::class,
-                ]),
-            ],
-
-            'reviewable_id' => [
-                'required',
-                'integer',
-                'min:1',
-            ],
-
-            'rating' => [
-                'required',
-                'integer',
-                'min:1',
-                'max:5',
-            ],
-
-            'comment' => [
-                'nullable',
-                'string',
-            ],
+        $data = $request->validate([
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'comment' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $reviewableType = $request->input('reviewable_type');
-
-        $reviewable = $reviewableType::find(
-            $request->input('reviewable_id')
-        );
-
-        if (! $reviewable) {
-            throw ValidationException::withMessages([
-                'reviewable_id' =>
-                    'O barbeiro ou serviço selecionado não existe.',
-            ]);
-        }
-
-        if (
-            $reviewable instanceof User &&
-            ! $reviewable->isBarber()
-        ) {
-            throw ValidationException::withMessages([
-                'reviewable_id' =>
-                    'O utilizador selecionado não é barbeiro.',
-            ]);
-        }
-
-        // reviewer_id nunca muda: mantém-se o autor original.
-        $review->update([
-            'reviewable_type' => $reviewableType,
-            'reviewable_id' => $request->input('reviewable_id'),
-            'rating' => $request->input('rating'),
-            'comment' => $request->input('comment'),
-        ]);
+        $review->update($data);
 
         return redirect()
             ->route('reviews.index')
-            ->with(
-                'success',
-                'Avaliação atualizada com sucesso.'
-            );
+            ->with('success', 'Avaliação atualizada com sucesso.');
     }
 
     public function destroy($id)
