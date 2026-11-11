@@ -7,10 +7,10 @@ use Illuminate\Support\Facades\Hash;
 function validRegistration(array $overrides = []): array
 {
     return array_merge([
-        'name'                  => 'Maria Costa',
-        'email'                 => 'maria@example.com',
-        'phone'                 => '912345678',
-        'password'              => 'palavra-passe-segura',
+        'name' => 'Maria Costa',
+        'email' => 'maria@example.com',
+        'phone' => '912345678',
+        'password' => 'palavra-passe-segura',
         'password_confirmation' => 'palavra-passe-segura',
     ], $overrides);
 }
@@ -69,7 +69,7 @@ test('registration rejects a wrong password confirmation', function () {
 
 test('registration rejects a short password', function () {
     $this->post(route('register'), validRegistration([
-        'password'              => 'curta',
+        'password' => 'curta',
         'password_confirmation' => 'curta',
     ]))->assertSessionHasErrors('password');
 });

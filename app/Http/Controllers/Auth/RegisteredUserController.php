@@ -32,6 +32,7 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'name'     => $data['name'],
             'email'    => $data['email'],
+            // telefone é opcional, e so aceita numeros , e ate 20 chars
             'phone'    => $data['phone'] ?? null,
             'password' => $data['password'],
             'role'     => UserRole::Client,

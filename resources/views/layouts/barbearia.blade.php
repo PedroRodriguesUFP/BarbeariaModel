@@ -297,7 +297,7 @@
             {{-- CLIENTE --}}
             @auth
 
-                @if (auth()->user()->isClient() || auth()->user()->isAdmin())
+                @if (auth()->user()->can('create', \App\Models\Appointment::class))
 
                     <a href="{{ route('appointments.create') }}">
                         Marcar horário
@@ -334,7 +334,7 @@
     @auth
 
         @if (
-            (auth()->user()->isClient() || auth()->user()->isAdmin()) &&
+            (auth()->user()->can('create', \App\Models\Appointment::class)) &&
             ! request()->routeIs('appointments.create')
         )
 

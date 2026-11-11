@@ -6,8 +6,6 @@
 
 @php
     $estado = $appointment->status?->value;
-    $isBarber = auth()->check()
-        && (int) auth()->id() === (int) $appointment->barber_id;
 @endphp
 
 <div class="wrap">
@@ -191,133 +189,51 @@
 
 
         {{-- =====================================================
-            AÇÕES DO BARBEIRO
+            AÇÕES SOBRE O ESTADO (cada botão segue a AppointmentPolicy)
         ====================================================== --}}
-        @if ($isBarber)
+        @canany(['confirm', 'complete', 'cancel'], $appointment)
 
-            <div
-                class="card barber-status-actions animate-enter"
-                style="margin-top: 2rem;"
-            >
+            <div class="card barber-status-actions animate-enter" style="margin-top: 2rem;">
 
-                <span class="tag">
-                    AÇÕES DO BARBEIRO
-                </span>
+                <span class="tag">AÇÕES</span>
 
-                <h2>
-                    Atualizar marcação
-                </h2>
-
-                <p>
-                    Altera o estado desta marcação conforme o atendimento.
-                </p>
-
+                <h2>Atualizar marcação</h2>
 
                 <div class="row-actions">
 
-                    {{-- CONFIRMAR --}}
-                    @if (
-                        $appointment->status ===
-                        \App\Enums\Status::Pending &&
-                        Route::has('appointments.confirm')
-                    )
-
-                        <form
-                            method="POST"
-                            action="{{ route(
-                                'appointments.confirm',
-                                $appointment
-                            ) }}"
-                        >
-
+                    @can('confirm', $appointment)
+                        <form method="POST" action="{{ route('appointments.confirm', $appointment) }}">
                             @csrf
                             @method('PATCH')
-
-                            <button
-                                type="submit"
-                                class="btn small"
-                            >
-                                Confirmar
-                            </button>
-
+                            <button type="submit" class="btn small">Confirmar</button>
                         </form>
+                    @endcan
 
-                    @endif
-
-
-                    {{-- CONCLUIR --}}
-                    @if (
-                        $appointment->status ===
-                        \App\Enums\Status::Confirmed &&
-                        Route::has('appointments.complete')
-                    )
-
-                        <form
-                            method="POST"
-                            action="{{ route(
-                                'appointments.complete',
-                                $appointment
-                            ) }}"
-                        >
-
+                    @can('complete', $appointment)
+                        <form method="POST" action="{{ route('appointments.complete', $appointment) }}">
                             @csrf
                             @method('PATCH')
-
-                            <button
-                                type="submit"
-                                class="btn small"
-                            >
-                                Concluir serviço
-                            </button>
-
+                            <button type="submit" class="btn small">Concluir serviço</button>
                         </form>
+                    @endcan
 
-                    @endif
-
-
-                    {{-- CANCELAR --}}
-                    @if (
-                        in_array(
-                            $appointment->status,
-                            [
-                                \App\Enums\Status::Pending,
-                                \App\Enums\Status::Confirmed,
-                            ],
-                            true
-                        ) &&
-                        Route::has('appointments.cancel')
-                    )
-
+                    @can('cancel', $appointment)
                         <form
                             method="POST"
-                            action="{{ route(
-                                'appointments.cancel',
-                                $appointment
-                            ) }}"
-                            onsubmit="return confirm(
-                                'Cancelar esta marcação?'
-                            )"
+                            action="{{ route('appointments.cancel', $appointment) }}"
+                            onsubmit="return confirm('Cancelar esta marcação?')"
                         >
-
                             @csrf
                             @method('PATCH')
-
-                            <button
-                                type="submit"
-                                class="btn small ghost"
-                            >
-                                Cancelar
-                            </button>
-
+                            <button type="submit" class="btn small ghost">Cancelar</button>
                         </form>
-
-                    @endif
+                    @endcan
 
                 </div>
 
             </div>
 
-        @endif
+        @endcanany
 
     </div>
 

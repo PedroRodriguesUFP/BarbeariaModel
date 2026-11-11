@@ -29,7 +29,7 @@ class RegisterRequest extends FormRequest
         return [
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'phone'    => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', 'numeric', 'digits_between:8,20'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ];
     }
@@ -41,6 +41,7 @@ class RegisterRequest extends FormRequest
             'email.required'     => 'Indique o seu email.',
             'email.email'        => 'Indique um email válido.',
             'email.unique'       => 'Já existe uma conta com este email.',
+            'phone.regex'        => 'Indique um número de telemóvel válido.',
             'password.required'  => 'Escolha uma palavra-passe.',
             'password.confirmed' => 'A confirmação da palavra-passe não coincide.',
         ];
