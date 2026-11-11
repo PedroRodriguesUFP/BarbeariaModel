@@ -18,9 +18,8 @@ class GoogleLoginController extends Controller
     public function callback()
     {
         $googleUser = Socialite::driver('google')
-
-        ->stateless()
-        ->user();
+            ->stateless()
+            ->user();
 
         // Procura primeiro pelo Google ID.
         $user = User::where(
@@ -64,6 +63,10 @@ class GoogleLoginController extends Controller
                 ]);
         }
 
+        if (! $user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
         Auth::login($user);
 
         request()->session()->regenerate();
@@ -73,3 +76,4 @@ class GoogleLoginController extends Controller
         );
     }
 }
+

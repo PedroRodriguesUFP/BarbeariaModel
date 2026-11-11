@@ -36,6 +36,7 @@ class ScheduleBlock extends Model
         return $this->belongsTo(User::class);
     }
 
+     //nao trabalha todo o dia
     public function isAllDay(): bool
     {
         return $this->all_day;

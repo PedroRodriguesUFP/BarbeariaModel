@@ -84,6 +84,7 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
+        // proibe um ip de forçar tentativas
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
     }
 }

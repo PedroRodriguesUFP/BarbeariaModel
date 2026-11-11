@@ -23,7 +23,7 @@ test('registration page is shown to guests', function () {
 
 test('visitor can register and becomes a client who is logged in', function () {
     $this->post(route('register'), validRegistration())
-        ->assertRedirect(route('appointments.index'));
+        ->assertRedirect(route('verification.notice'));
 
     $user = User::where('email', 'maria@example.com')->firstOrFail();
 
