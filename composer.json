@@ -13,7 +13,10 @@
         "laravel/framework": "^13.17",
         "laravel/socialite": "^5.31",
         "laravel/tinker": "^3.0",
-        "stripe/stripe-php": "^22.1"
+        "nyholm/psr7": "*",
+        "railsware/mailtrap-php": "*",
+        "stripe/stripe-php": "^22.1",
+        "symfony/http-client": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

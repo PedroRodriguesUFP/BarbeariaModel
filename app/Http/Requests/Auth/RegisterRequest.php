@@ -27,9 +27,9 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'phone'    => ['nullable', 'string', 'max:20'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'phone' => ['nullable', 'numeric', 'digits_between:8,20'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ];
     }
@@ -37,11 +37,13 @@ class RegisterRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required'      => 'Indique o seu nome.',
-            'email.required'     => 'Indique o seu email.',
-            'email.email'        => 'Indique um email válido.',
-            'email.unique'       => 'Já existe uma conta com este email.',
-            'password.required'  => 'Escolha uma palavra-passe.',
+            'name.required' => 'Indique o seu nome.',
+            'email.required' => 'Indique o seu email.',
+            'email.email' => 'Indique um email válido.',
+            'email.unique' => 'Já existe uma conta com este email.',
+            'phone.numeric' => 'Indique um número de telemóvel válido.',
+            'phone.digits_between' => 'O número de telemóvel deve ter entre 8 e 20 dígitos.',
+            'password.required' => 'Escolha uma palavra-passe.',
             'password.confirmed' => 'A confirmação da palavra-passe não coincide.',
         ];
     }

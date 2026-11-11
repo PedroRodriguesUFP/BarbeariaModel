@@ -30,12 +30,13 @@ class RegisteredUserController extends Controller
         // O papel e o estado são decididos aqui, não pelo formulário.
         // A password é encriptada sozinha pelo cast 'hashed' do modelo User.
         $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'phone'    => $data['phone'] ?? null,
+            'name' => $data['name'],
+            'email' => $data['email'],
+            // telefone é opcional, e so aceita numeros , e ate 20 chars
+            'phone' => $data['phone'] ?? null,
             'password' => $data['password'],
-            'role'     => UserRole::Client,
-            'active'   => true,
+            'role' => UserRole::Client,
+            'active' => true,
         ]);
 
         event(new Registered($user));
@@ -44,6 +45,6 @@ class RegisteredUserController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route($user->homeRoute());
+        return redirect()->route('verification.notice');
     }
 }

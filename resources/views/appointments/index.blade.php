@@ -9,7 +9,9 @@
             <h1>Marcações</h1>
             <p class="sub">Quem vem, com que barbeiro e a que horas.</p>
         </div>
-        <a class="btn" href="{{ route('appointments.create') }}">Nova marcação</a>
+        @can('create', \App\Models\Appointment::class)
+            <a class="btn" href="{{ route('appointments.create') }}">Nova marcação</a>
+        @endcan
     </header>
 
     <div class="page-body">

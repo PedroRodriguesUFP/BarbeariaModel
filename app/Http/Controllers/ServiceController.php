@@ -12,59 +12,65 @@ class ServiceController extends Controller
     {
         $services = Service::all();
 
-    return view('services.index', compact('services'));
+        return view('services.index', compact('services'));
     }
 
     // Apresenta o formulário de criação.
     public function create()
     {
+        $this->authorize('create', Service::class);
+
         return view('services.create');
     }
 
     // Valida e guarda um novo serviço.
-    // Validação e autorização: GuardarServicoRequest.
+    // Validação e autorização (ServicePolicy): GuardarServicoRequest.
     public function store(GuardarServicoRequest $request)
     {
         $validated = $request->validated();
 
-    Service::create($validated);
+        Service::create($validated);
 
-    return redirect()
-        ->route('services.index')
-        ->with('success', 'Service created successfully.');
+        return redirect()
+            ->route('services.index')
+            ->with('success', 'Service created successfully.');
     }
 
     // Apresenta um serviço específico.
     public function show(Service $service)
     {
-         return view('services.show', compact('service'));
+        return view('services.show', compact('service'));
     }
 
     // Apresenta o formulário de edição.
     public function edit(Service $service)
-    { 
-         return view('services.edit', compact('service'));
+    {
+        $this->authorize('update', $service);
+
+        return view('services.edit', compact('service'));
     }
 
     // Valida e atualiza um serviço.
     public function update(GuardarServicoRequest $request, Service $service)
     {
-         $validated = $request->validated();
+        $validated = $request->validated();
 
-    $service->update($validated);
+        $service->update($validated);
 
-    return redirect()
-        ->route('services.index')
-        ->with('success', 'Service updated successfully.');
+        return redirect()
+            ->route('services.index')
+            ->with('success', 'Service updated successfully.');
     }
 
     // Apaga um serviço.
     public function destroy(Service $service)
     {
-         $service->delete();
+        $this->authorize('delete', $service);
 
-    return redirect()
-        ->route('services.index')
-        ->with('success', 'Service deleted successfully.');
+        $service->delete();
+
+        return redirect()
+            ->route('services.index')
+            ->with('success', 'Service deleted successfully.');
     }
 }

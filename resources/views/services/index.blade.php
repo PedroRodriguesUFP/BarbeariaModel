@@ -19,9 +19,9 @@
             <h1>Serviços</h1>
             <p class="sub">Preço e duração de cada serviço.</p>
         </div>
-        @if (auth()->user()?->isAdmin())
+        @can('create', \App\Models\Service::class)
             <a class="btn" href="{{ route('services.create') }}">Novo serviço</a>
-        @endif
+        @endcan
     </header>
 
     <div class="page-body">
@@ -30,9 +30,9 @@
         @if ($services->isEmpty())
             <p class="empty">
                 Ainda não existem serviços.
-                @if (auth()->user()?->isAdmin())
+                @can('create', \App\Models\Service::class)
                     <a href="{{ route('services.create') }}">Adicionar o primeiro serviço</a>
-                @endif
+                @endcan
             </p>
         @else
             <div class="cards">
@@ -48,8 +48,10 @@
 
                         <div class="row-actions lift">
                             <a class="link" href="{{ route('services.show', $service) }}">Ver</a>
-                            @if (auth()->user()?->isAdmin())
+                            @can('update', $service)
                                 <a class="link" href="{{ route('services.edit', $service) }}">Editar</a>
+                            @endcan
+                            @can('delete', $service)
                                 <form
                                     action="{{ route('services.destroy', $service) }}"
                                     method="POST"
@@ -59,7 +61,7 @@
                                     @method('DELETE')
                                     <button class="link danger" type="submit">Eliminar</button>
                                 </form>
-                            @endif
+                            @endcan
                         </div>
                     </article>
                 @endforeach

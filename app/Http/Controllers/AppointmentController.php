@@ -68,7 +68,7 @@ class AppointmentController extends Controller
             ->paginate(15)
             ->withQueryString(); // mantém os filtros ao mudar de página
 
-        $barbers  = User::where('role', UserRole::Barber->value)->orderBy('name')->get(['id', 'name']);
+        $barbers = User::where('role', UserRole::Barber->value)->orderBy('name')->get(['id', 'name']);
         $statuses = Status::cases();
 
         return view('appointments.index', compact('appointments', 'barbers', 'statuses'));
@@ -99,7 +99,7 @@ class AppointmentController extends Controller
     {
         $data = $request->validated();
 
-        $barber  = User::findOrFail($data['barber_id']);
+        $barber = User::findOrFail($data['barber_id']);
         $service = Service::findOrFail($data['service_id']);
 
         $this->ensureBarberIsAvailable($barber, $service, $data['date'], $data['time']);
@@ -111,11 +111,11 @@ class AppointmentController extends Controller
             : $request->user()->id;
 
         Appointment::create([
-            'date'        => $data['date'],
-            'time'        => $data['time'],
+            'date' => $data['date'],
+            'time' => $data['time'],
             'customer_id' => $customerId,
-            'service_id'  => $service->id,
-            'barber_id'   => $barber->id,
+            'service_id' => $service->id,
+            'barber_id' => $barber->id,
         ]);
 
         return redirect()
@@ -141,7 +141,7 @@ class AppointmentController extends Controller
     {
         $data = $request->validated();
 
-        $barber  = User::findOrFail($data['barber_id']);
+        $barber = User::findOrFail($data['barber_id']);
         $service = Service::findOrFail($data['service_id']);
 
         // Passamos o id desta marcação para ela não "chocar" consigo própria
@@ -156,10 +156,10 @@ class AppointmentController extends Controller
 
         // O cliente não muda numa edição, só data, hora, serviço e barbeiro.
         $appointment->update([
-            'date'       => $data['date'],
-            'time'       => $data['time'],
+            'date' => $data['date'],
+            'time' => $data['time'],
             'service_id' => $service->id,
-            'barber_id'  => $barber->id,
+            'barber_id' => $barber->id,
         ]);
 
         return redirect()
@@ -185,14 +185,14 @@ class AppointmentController extends Controller
     // ------------------------------------------------------------------
     // Mudanças de estado: Pendente -> Confirmada -> Concluída
     //                     (Pendente ou Confirmada -> Cancelada)
-    // Só o barbeiro da marcação ou um admin pode confirmar e concluir.
-    // Cancelar também é permitido ao cliente da marcação.
+    // Quem pode fazer cada uma está na AppointmentPolicy.
     // ------------------------------------------------------------------
 
-    public function confirm(Request $request, Appointment $appointment)
+    public function confirm(Appointment $appointment)
     {
-        $this->authorizeBarberOrAdmin($request, $appointment);
+        $this->authorize('confirm', $appointment);
 
+        // O admin passa sempre na policy, por isso o estado vê-se aqui também.
         if (! $appointment->canBeConfirmed()) {
             return back()->withErrors([
                 'status' => 'Apenas marcações pendentes podem ser confirmadas.',
@@ -204,9 +204,9 @@ class AppointmentController extends Controller
         return back()->with('success', 'Marcação confirmada.');
     }
 
-    public function complete(Request $request, Appointment $appointment)
+    public function complete(Appointment $appointment)
     {
-        $this->authorizeBarberOrAdmin($request, $appointment);
+        $this->authorize('complete', $appointment);
 
         if (! $appointment->canBeCompleted()) {
             return back()->withErrors([
@@ -219,12 +219,10 @@ class AppointmentController extends Controller
         return back()->with('success', 'Marcação concluída.');
     }
 
-    public function cancel(Request $request, Appointment $appointment)
+    public function cancel(Appointment $appointment)
     {
-        // Aqui o próprio cliente também pode cancelar a sua marcação.
-        $this->authorizeBarberOrAdmin($request, $appointment, allowCustomer: true);
+        $this->authorize('cancel', $appointment);
 
-        // Só se cancela o que ainda está em aberto.
         if (! $appointment->canBeCancelled()) {
             return back()->withErrors([
                 'status' => 'Esta marcação já não pode ser cancelada.',
@@ -288,32 +286,5 @@ class AppointmentController extends Controller
                 'time' => 'O barbeiro não está disponível neste horário para este serviço.',
             ]);
         }
-    }
-
-    /**
-     * Só passam daqui o barbeiro da marcação e os admins.
-     * Com $allowCustomer = true, o cliente da marcação também passa.
-     * Os outros levam 403.
-     */
-    private function authorizeBarberOrAdmin(
-        Request $request,
-        Appointment $appointment,
-        bool $allowCustomer = false
-    ): void {
-        $user = $request->user();
-
-        $isTheBarber   = (int) $appointment->barber_id === (int) $user->id;
-        $isTheCustomer = $appointment->customer_id !== null
-            && (int) $appointment->customer_id === (int) $user->id;
-
-        if ($user->isAdmin() || $isTheBarber) {
-            return;
-        }
-
-        if ($allowCustomer && $isTheCustomer) {
-            return;
-        }
-
-        abort(403);
     }
 }

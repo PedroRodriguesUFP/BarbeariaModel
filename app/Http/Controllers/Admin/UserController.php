@@ -17,7 +17,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $role = $request->query('role');
-        
+
         // Uso do helper 'string()' do Laravel para um trim mais elegante e seguro
         $searchQuery = $request->string('q')->trim();
 
@@ -30,15 +30,15 @@ class UserController extends Controller
             // Filtro de pesquisa livre em nome ou email
             ->when($searchQuery->isNotEmpty(), fn ($query) => $query->where(
                 fn ($q) => $q->where('name', 'like', "%{$searchQuery}%")
-                             ->orWhere('email', 'like', "%{$searchQuery}%")
+                    ->orWhere('email', 'like', "%{$searchQuery}%")
             ))
             ->orderBy('name')
             ->get();
 
         return view('admin.users.index', [
             'users' => $users,
-            'role'  => $role,
-            'q'     => $searchQuery->value(),
+            'role' => $role,
+            'q' => $searchQuery->value(),
             'roles' => UserRole::cases(),
         ]);
     }
@@ -49,7 +49,7 @@ class UserController extends Controller
     public function create()
     {
         return view('admin.users.create', [
-            'roles' => UserRole::cases()
+            'roles' => UserRole::cases(),
         ]);
     }
 
@@ -59,17 +59,18 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone'    => ['nullable', 'string', 'max:30'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:30'],
             'password' => ['required', 'confirmed', Password::min(8)],
-            'role'     => ['required', Rule::enum(UserRole::class)],
+            'role' => ['required', Rule::enum(UserRole::class)],
         ]);
 
         // Por defeito, novas contas criadas pelo Admin entram logo ativas
         $data['active'] = true;
-        
-        User::create($data);
+
+        $user = User::create($data);
+        $user->markEmailAsVerified();
 
         return redirect()
             ->route('admin.users.index')
@@ -91,7 +92,7 @@ class UserController extends Controller
         }
 
         $data = $request->validate([
-            'role'   => ['sometimes', Rule::enum(UserRole::class)],
+            'role' => ['sometimes', Rule::enum(UserRole::class)],
             'active' => ['sometimes', 'boolean'],
         ]);
 
@@ -112,10 +113,10 @@ class UserController extends Controller
             ]);
         }
 
-        // Proteção de integridade (Alinhado com a Fase 3 de BDAD): 
-        // Apagar um utilizador com histórico provocaria um apagar em cascata (cascade delete) 
+        // Proteção de integridade (Alinhado com a Fase 3 de BDAD):
+        // Apagar um utilizador com histórico provocaria um apagar em cascata (cascade delete)
         // de marcações e faturas. Exigimos a desativação (soft-ban) da conta nestes casos.
-        $hasAppointments = $user->appointmentsAsCustomer()->exists() 
+        $hasAppointments = $user->appointmentsAsCustomer()->exists()
                         || $user->appointmentsAsBarber()->exists();
 
         if ($hasAppointments) {

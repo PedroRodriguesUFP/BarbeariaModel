@@ -44,9 +44,15 @@ return [
     ],
 
     'google' => [
-    'client_id' => env('GOOGLE_CLIENT_ID'),
-    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-    'redirect' => env('GOOGLE_REDIRECT_URI'),
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    'mailtrap' => [
+        'api_token' => env('MAILTRAP_API_TOKEN'),
+        'from_address' => env('MAILTRAP_FROM_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@demomailtrap.co')),
+        'from_name' => env('MAILTRAP_FROM_NAME', env('MAIL_FROM_NAME', 'Barbearia')),
     ],
 
 ];

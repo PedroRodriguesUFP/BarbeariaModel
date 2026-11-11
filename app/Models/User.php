@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use Carbon\Carbon;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,7 +18,7 @@ use Illuminate\Notifications\Notifiable;
  * Os barbeiros têm ainda horário semanal, bloqueios, serviços que fazem
  * e a lógica de disponibilidade (isAvailableFor) no fim deste ficheiro.
  */
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable;
 
@@ -42,9 +43,9 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed', // a password é encriptada ao guardar
-            'role'              => UserRole::class,
-            'active'            => 'boolean',
+            'password' => 'hashed', // a password é encriptada ao guardar
+            'role' => UserRole::class,
+            'active' => 'boolean',
         ];
     }
 
@@ -81,9 +82,9 @@ class User extends Authenticatable
     public function homeRoute(): string
     {
         return match ($this->role) {
-            UserRole::Admin  => 'admin.dashboard',
+            UserRole::Admin => 'admin.dashboard',
             UserRole::Barber => 'calendar.mine',
-            default          => 'appointments.index',
+            default => 'appointments.index',
         };
     }
 
@@ -252,8 +253,8 @@ class User extends Authenticatable
         // Se for barbeiro e cliente da mesma marcação, só conta uma vez.
         $appointments = $asBarber->merge($asCustomer)->unique('id');
 
-        $newStart = Carbon::parse($date . ' ' . $startTime);
-        $newEnd   = Carbon::parse($date . ' ' . $endTime);
+        $newStart = Carbon::parse($date.' '.$startTime);
+        $newEnd = Carbon::parse($date.' '.$endTime);
 
         foreach ($appointments as $appointment) {
             // A marcação que estamos a editar não conflita consigo própria.
@@ -272,7 +273,7 @@ class User extends Authenticatable
             }
 
             $existingStart = Carbon::parse(
-                $appointment->date->format('Y-m-d') . ' ' . $appointment->time
+                $appointment->date->format('Y-m-d').' '.$appointment->time
             );
 
             $existingEnd = $existingStart
@@ -305,11 +306,11 @@ class User extends Authenticatable
         }
 
         // Hora de fim = início + duração do serviço.
-        $start = Carbon::parse($date . ' ' . $time);
-        $end   = $start->copy()->addMinutes($service->duration_minutes);
+        $start = Carbon::parse($date.' '.$time);
+        $end = $start->copy()->addMinutes($service->duration_minutes);
 
         $startTime = $start->format('H:i:s');
-        $endTime   = $end->format('H:i:s');
+        $endTime = $end->format('H:i:s');
 
         if (! $this->worksDuring($date, $startTime, $endTime)) {
             return false;

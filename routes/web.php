@@ -25,7 +25,7 @@ Route::get('/', function () {
 
 // Consulta pública dos serviços.
 // A administração (create/edit/...) está mais abaixo e tem de vir antes de /services/{service}.
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::resource('services', ServiceController::class)
         ->except(['index', 'show']);
 });
@@ -44,7 +44,7 @@ Route::middleware('guest')->group(function () {
 
 // AUTENTICADO (qualquer role)
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         return redirect()->route(auth()->user()->homeRoute());
     })->name('dashboard');

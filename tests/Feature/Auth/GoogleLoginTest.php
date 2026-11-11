@@ -48,6 +48,7 @@ test('new google user without an account is created as a client', function () {
         'active' => true,
     ]);
 
+    expect($user->hasVerifiedEmail())->toBeTrue();
     $this->assertAuthenticated();
 });
 
