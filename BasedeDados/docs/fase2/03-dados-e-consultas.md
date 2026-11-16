@@ -33,12 +33,12 @@ Tudo o que está abaixo foi **executado** em PostgreSQL 16.15 com `./run_all.sh`
 | Serviço inativo sem barbeiros | service 6 | RN03 (teste 20) |
 | Plano inativo | plan 3 | RD06 |
 | Conta sem password | user 12 | RD01 |
-| Avaliação fora do trimestre de Q01 | review 7 (out) | NI01 |
+| Avaliação fora do trimestre de Q01 | review 7 (out) | Q01 |
 | Barbeiro a avaliar outro barbeiro | review 9 | RN06 |
 
 ## 2. Consultas (`sql/03_consultas.sql`) e resultados obtidos
 
-Numeração igual à Fase 1 (NI01 = Q01, …).
+Numeração igual à Fase 1 (`fase1.md` §2.4, Q01–Q08).
 
 **Q01 — barbeiros mais bem avaliados (jul–set 2026)**
 
@@ -116,9 +116,11 @@ A marcação 30 (confirmed) não aparece. Um walk-in pendente apareceria como «
 
 ## 3. Testes de integridade (`sql/04_testes_integridade.sql`)
 
-52 testes: **43 negativos** (a operação tem de ser recusada com o SQLSTATE **e** a restrição esperados) e **9 positivos** (a operação válida tem de ser aceite). Resultado da execução: `total 52 | passaram 52 | falharam 0`. Corre numa transação revertida e confirmei que a BD fica intacta (32 marcações, 14 avaliações, 19 pagamentos, 12 utilizadores).
+55 testes: **45 negativos** (a operação tem de ser recusada com o SQLSTATE **e** a restrição esperados) e **10 positivos** (a operação válida tem de ser aceite). Resultado da execução: `total 55 | passaram 55 | falharam 0`. Corre numa transação revertida e confirmei que a BD fica intacta (32 marcações, 14 avaliações, 19 pagamentos, 12 utilizadores).
 
-**Teste de mutação** (para ter a certeza de que os testes não são vazios): removi `fk_appointments_barber_service` e `ck_appointments_subscription_needs_customer` e voltei a correr; falharam exatamente os testes 19, 20, 21 e 29 (48 passaram, 4 falharam). A BD foi recriada do zero depois disso.
+Dois dos negativos e dois dos positivos cobrem o RN10 (`reviews.appointment_id`, ver `00-correcoes-fase1.md` §4): marcação inexistente (FK), segunda avaliação ao mesmo alvo da mesma marcação (índice único parcial), avaliação válida ligada a uma marcação e avaliação válida sem marcação (dado antigo).
+
+**Teste de mutação** (para ter a certeza de que os testes não são vazios): removi `fk_appointments_barber_service` e `ck_appointments_subscription_needs_customer` e voltei a correr; falharam exatamente os testes 19, 20, 21 e 29 (51 passaram, 4 falharam). A BD foi recriada do zero depois disso.
 
 ## 4. Limites do que foi testado
 

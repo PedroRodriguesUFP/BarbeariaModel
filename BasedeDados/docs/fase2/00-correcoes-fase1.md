@@ -23,7 +23,7 @@ A Fase 2 obriga a corrigir a Fase 1 quando a implementação expõe falhas. Este
 | Barbeiro como cliente | Permitido. A RN08 antiga (papéis nas marcações) foi **removida**; fica só `CHECK (customer_id <> barber_id)`, agora **RN09**. | README do repo. Testado: o barbeiro 4 (Rui) tem marcações como cliente (ids 12 e 32) e o teste `RN09 barbeiro como cliente de outro barbeiro` passa. |
 | Horário | `working_hours` + `schedule_blocks`. `calendario` e `calendario_dia` descartados. | Os do repo. Como o horário é por dia da semana, o multivalor `dias_trabalho` desaparece (1NF). |
 | Walk-in | `customer_id` anulável + `walk_in_name` + `walk_in_phone`, com `CHECK (customer_id IS NOT NULL OR walk_in_name IS NOT NULL)`. **Acrescentei** `CHECK (subscription_id IS NULL OR customer_id IS NOT NULL)`. | Sem este segundo CHECK, uma marcação walk-in podia ter `subscription_id`: a FK composta `(subscription_id, customer_id)` não é verificada quando `customer_id` é NULL (o PostgreSQL usa `MATCH SIMPLE`). Foi apanhado ao desenhar o teste 29. |
-| Avaliações | Manter o XOR `barber_id`/`service_id`. **Não** ligar à marcação. `reviewer_id` mantém-se. | Ver §4. |
+| Avaliações | Manter o XOR `barber_id`/`service_id`. **Ligar à marcação** por `appointment_id` anulável (RN10). `reviewer_id` mantém-se. | A app já tem `reviews.appointment_id` (migration `add_appointment_id_to_reviews_table`) e o `ReviewController::store()` exige sempre a marcação; ver §4. |
 | Pagamentos | XOR `appointment_id`/`subscription_id`. **Sem `payer_id`.** | Ver §4 e `02-normalizacao.md` §3. |
 | Subscrições | Mantêm-se no SQL; faltam no Laravel (lista em `04-alteracoes-laravel.md`). | |
 | `appointments.time` | `NOT NULL` (a migration do Laravel tem de mudar; os controllers já exigem `required`). | |
@@ -41,7 +41,7 @@ A Fase 2 obriga a corrigir a Fase 1 quando a implementação expõe falhas. Este
 | F2 | 1.2 CALENDARIO | Substituir por duas entidades: **HORARIO_TRABALHO** (`dia_semana` 1–7, `hora_inicio`, `hora_fim`; N por barbeiro, permite vários períodos no mesmo dia) e **BLOQUEIO_AGENDA** (`data`, `hora_inicio` e `hora_fim` opcionais, `dia_inteiro`, `motivo`). Ambas dependem só de barbeiros. Apagar `dias_trabalho`. |
 | F3 | 1.2 MARCACAO | `hora` passa a **obrigatória**. Acrescentar `nome_cliente_balcao` e `telefone_cliente_balcao` (opcionais; usados só quando o cliente não tem conta). Relacionar com SERVICO (1 serviço por marcação). |
 | F4 | 1.2 PAGAMENTO | Sem atributo nem relação com o pagador: o pagador deriva da marcação (cliente) ou da subscrição (utilizador). |
-| F5 | 1.2 AVALIACAO | Acrescentar `data` (mapeada para `created_at`). Relações: escrita por um utilizador; incide num barbeiro **ou** num serviço. |
+| F5 | 1.2 AVALIACAO | Acrescentar `data` (mapeada para `created_at`). Relações: escrita por um utilizador; incide num barbeiro **ou** num serviço; refere-se, opcionalmente, a uma marcação (`appointment_id`, NULL em dados antigos). |
 | F6 | 1.2 SERVICO | Categorias conceptuais mantêm-se (cabelo, barba, cabelo e barba, degradé, coloração). O mapeamento para os valores físicos está em §5. |
 | F7 | 1.4 Matriz | Substituir pela matriz de §4 deste documento. |
 | F8 | 2.1 RD02 | «telefone, e biografia para barbeiros» (sem NIF). |
@@ -53,7 +53,7 @@ A Fase 2 obriga a corrigir a Fase 1 quando a implementação expõe falhas. Este
 | F14 | 2.2 RN05 | Clarificar: «marcações cobertas = marcações do mês ligadas à subscrição e **não canceladas**»; e «a subscrição que cobre a marcação pertence ao cliente da marcação». |
 | F15 | 2.2 novas | **RN07** sem conflito de horário: um barbeiro não tem duas marcações ativas (não canceladas) à mesma hora (a sobreposição por duração fica para a Fase 3). **RN08** um utilizador tem no máximo uma subscrição ativa. **RN09** ninguém marca consigo próprio (um barbeiro pode ser cliente de outro barbeiro; não há restrição de papel no cliente). |
 | F16 | 2.2 RN06 | Mantém-se (barbeiro XOR serviço). O alvo «barbeiro» tem de ter papel barbeiro. |
-| F17 | 2.4 NI01 | «último trimestre» passa a usar a data da avaliação. |
+| F17 | 2.4 Q01 | «último trimestre» passa a usar a data da avaliação. |
 | F18 | 2.5 Rastreabilidade | Substituir pela tabela de `01-mapeamento-relacional.md` §4. |
 
 ## 3. Regras de negócio finais
@@ -69,6 +69,7 @@ A Fase 2 obriga a corrigir a Fase 1 quando a implementação expõe falhas. Este
 | RN07 | Um barbeiro não tem duas marcações ativas à mesma hora. |
 | RN08 | Um utilizador tem no máximo uma subscrição ativa. |
 | RN09 | Ninguém marca consigo próprio. Um barbeiro pode ser cliente de outro. |
+| RN10 | Uma marcação tem no máximo uma avaliação ao barbeiro e uma ao serviço. |
 
 **Removida:** a RN08 do zip («cliente tem papel cliente; barbeiro tem papel barbeiro»), por contrariar o README do repo.
 
@@ -90,16 +91,19 @@ A Fase 2 obriga a corrigir a Fase 1 quando a implementação expõe falhas. Este
 | SUBSCRICAO | origina | PAGAMENTO | subscrição (0,N) : pagamento (0,1); o pagamento tem exatamente 1 origem |
 | UTILIZADOR | escreve | AVALIACAO | (1,1) na avaliação : (0,N) |
 | AVALIACAO | incide em | BARBEIRO **ou** SERVICO | exatamente um dos dois |
+| AVALIACAO | refere-se a | MARCACAO | (0,1) na avaliação : (0,N) — nulo em dados antigos |
 
 ### Decisão sobre as avaliações (ligar ou não à marcação)
 
-**Não liguei.** Razões:
+**Liguei**, ao contrário da primeira versão deste documento. Razões para rever:
 
-1. Nem a Fase 1 nem a app têm a regra «só se pode avaliar quem nos atendeu». Acrescentá-la só para justificar uma FK composta seria inventar uma regra de negócio.
-2. Ligar obrigaria a reescrever `ReviewController`, `ReviewPolicy`, as views de avaliações e os testes (hoje qualquer cliente avalia qualquer barbeiro/serviço, com `morphs`).
-3. O diagrama Chen já modela `AVALIAÇÃO` ligada a cliente, barbeiro e serviço, sem ligação à marcação.
+1. A app já tem `reviews.appointment_id` (migration `add_appointment_id_to_reviews_table`, posterior à criação da tabela) e `ReviewController::store()` **exige sempre** uma marcação concluída do próprio cliente, ainda sem avaliação — a app não permite hoje avaliar sem marcação. Manter o SQL sem esta coluna era o SQL a divergir do código, não uma simplificação.
+2. A app já impede duas avaliações (barbeiro + serviço) na mesma marcação com `UNIQUE (appointment_id, reviewable_type)`. A forma declarativa equivalente, sem `morphs`, são os dois índices únicos parciais de `01_schema.sql` (RN10).
+3. `reviewer_id` mantém-se mesmo assim: numa avaliação sem `appointment_id` (dado antigo, ver seed) o autor não se deriva de nenhuma outra relação.
 
-O que se perde: o BD não impede avaliar um barbeiro que nunca atendeu o autor. Se o grupo quiser essa regra, é uma decisão de negócio nova e a forma declarativa é `reviews.appointment_id` + FK compostas `(appointment_id, barber_id)` e `(appointment_id, service_id)` para `appointments` (precisa de `UNIQUE (id, barber_id)` e `UNIQUE (id, service_id)`), eliminando então `reviewer_id` (deriva de `appointments.customer_id`).
+**Não fiz:** a FK composta `(appointment_id, barber_id) → appointments(id, barber_id)` que obrigaria o alvo da avaliação a coincidir com o barbeiro/serviço da própria marcação. A app não valida isso (o `store()` usa sempre `$appointment->barber_id`/`service_id`, por isso na prática coincide, mas a BD não o impõe) — ver `01-mapeamento-relacional.md` §4 e `02-normalizacao.md` §3. Fica para uma eventual Fase 3 (trigger), por não ser uma regra declarada na Fase 1.
+
+`appointment_id` é anulável: a migration do Laravel também o é ("opcional, para dados antigos"), e o seed usa isso mesmo na avaliação 8 (fora do trimestre, sem marcação identificável nos dados de teste).
 
 ## 5. Valores físicos vs. conceptuais
 

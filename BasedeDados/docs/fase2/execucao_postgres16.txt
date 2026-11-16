@@ -1,7 +1,3 @@
-# Execução real — 2026-11-01T11:00Z
-PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
-# comando: ./run_all.sh barbearia   (dropdb/createdb + 01 + 02 + 03 + 04, ON_ERROR_STOP=1)
-
  id |   barbeiro   | media | n_avaliacoes | n_comentarios 
 ----+--------------+-------+--------------+---------------
   2 | Tiago Costa  |  4.75 |            4 |             2
@@ -108,20 +104,23 @@ CREATE FUNCTION
  41 | RD09  | classificação 6                                     | 23514 ck_reviews_rating                           | 23514 ck_reviews_rating                           | PASSOU
  42 | RN06  | avaliar como "barbeiro" um cliente                  | 23503 fk_reviews_barber                           | 23503 fk_reviews_barber                           | PASSOU
  43 | RN06  | barbeiro a avaliar-se a si próprio                  | 23514 ck_reviews_not_self                         | 23514 ck_reviews_not_self                         | PASSOU
- 44 | RD05  | marcação válida (barbeiro habilitado)               | aceite                                            | aceite                                            | PASSOU
- 45 | RN09  | barbeiro como cliente de outro barbeiro             | aceite                                            | aceite                                            | PASSOU
- 46 | RD05  | marcação walk-in sem conta                          | aceite                                            | aceite                                            | PASSOU
- 47 | RN05  | marcação coberta pela subscrição do próprio cliente | aceite                                            | aceite                                            | PASSOU
- 48 | RN07  | reutilizar o slot de uma marcação cancelada         | aceite                                            | aceite                                            | PASSOU
- 49 | RN06  | avaliação válida a barbeiro                         | aceite                                            | aceite                                            | PASSOU
- 50 | RN06  | avaliação válida a serviço                          | aceite                                            | aceite                                            | PASSOU
- 51 | RN04  | pagamento válido de subscrição                      | aceite                                            | aceite                                            | PASSOU
- 52 | RD01  | conta sem password (login externo)                  | aceite                                            | aceite                                            | PASSOU
-(52 rows)
+ 44 | RD09  | avaliação com marcação inexistente                  | 23503 fk_reviews_appointment                      | 23503 fk_reviews_appointment                      | PASSOU
+ 45 | RN10  | segunda avaliação ao barbeiro da mesma marcação     | 23505 uq_reviews_appointment_barber               | 23505 uq_reviews_appointment_barber               | PASSOU
+ 46 | RD05  | marcação válida (barbeiro habilitado)               | aceite                                            | aceite                                            | PASSOU
+ 47 | RN09  | barbeiro como cliente de outro barbeiro             | aceite                                            | aceite                                            | PASSOU
+ 48 | RD05  | marcação walk-in sem conta                          | aceite                                            | aceite                                            | PASSOU
+ 49 | RN05  | marcação coberta pela subscrição do próprio cliente | aceite                                            | aceite                                            | PASSOU
+ 50 | RN07  | reutilizar o slot de uma marcação cancelada         | aceite                                            | aceite                                            | PASSOU
+ 51 | RN06  | avaliação válida a barbeiro (ligada à marcação 13)  | aceite                                            | aceite                                            | PASSOU
+ 52 | RN06  | avaliação válida a serviço (mesma marcação 13)      | aceite                                            | aceite                                            | PASSOU
+ 53 | RD09  | avaliação válida sem marcação (dado antigo)         | aceite                                            | aceite                                            | PASSOU
+ 54 | RN04  | pagamento válido de subscrição                      | aceite                                            | aceite                                            | PASSOU
+ 55 | RD01  | conta sem password (login externo)                  | aceite                                            | aceite                                            | PASSOU
+(55 rows)
 
  total | passaram | falharam | negativos | positivos 
 -------+----------+----------+-----------+-----------
-    52 |       52 |        0 |        43 |         9
+    55 |       55 |        0 |        45 |        10
 (1 row)
 
 ROLLBACK

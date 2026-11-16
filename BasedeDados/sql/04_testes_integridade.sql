@@ -194,6 +194,12 @@ SELECT pg_temp.t('RN06', 'avaliar como "barbeiro" um cliente',
 SELECT pg_temp.t('RN06', 'barbeiro a avaliar-se a si próprio',
   $q$INSERT INTO reviews (reviewer_id, barber_id, rating) VALUES (2, 2, 5)$q$,
   '23514 ck_reviews_not_self');
+SELECT pg_temp.t('RD09', 'avaliação com marcação inexistente',
+  $q$INSERT INTO reviews (reviewer_id, appointment_id, barber_id, rating) VALUES (5, 9999, 3, 4)$q$,
+  '23503 fk_reviews_appointment');
+SELECT pg_temp.t('RN10', 'segunda avaliação ao barbeiro da mesma marcação',
+  $q$INSERT INTO reviews (reviewer_id, appointment_id, barber_id, rating) VALUES (5, 1, 2, 3)$q$,
+  '23505 uq_reviews_appointment_barber');
 
 -- ===================== TESTES POSITIVOS =====================
 SELECT pg_temp.t('RD05', 'marcação válida (barbeiro habilitado)',
@@ -211,11 +217,14 @@ SELECT pg_temp.t('RN05', 'marcação coberta pela subscrição do próprio clien
 SELECT pg_temp.t('RN07', 'reutilizar o slot de uma marcação cancelada',
   $q$INSERT INTO appointments (customer_id, barber_id, service_id, date, time) VALUES (9, 3, 1, '2026-09-18', '10:00')$q$,
   'aceite');
-SELECT pg_temp.t('RN06', 'avaliação válida a barbeiro',
-  $q$INSERT INTO reviews (reviewer_id, barber_id, rating, comment) VALUES (5, 3, 4, 'ok')$q$,
+SELECT pg_temp.t('RN06', 'avaliação válida a barbeiro (ligada à marcação 13)',
+  $q$INSERT INTO reviews (reviewer_id, appointment_id, barber_id, rating, comment) VALUES (5, 13, 2, 4, 'ok')$q$,
   'aceite');
-SELECT pg_temp.t('RN06', 'avaliação válida a serviço',
-  $q$INSERT INTO reviews (reviewer_id, service_id, rating) VALUES (5, 2, 5)$q$,
+SELECT pg_temp.t('RN06', 'avaliação válida a serviço (mesma marcação 13)',
+  $q$INSERT INTO reviews (reviewer_id, appointment_id, service_id, rating) VALUES (5, 13, 1, 5)$q$,
+  'aceite');
+SELECT pg_temp.t('RD09', 'avaliação válida sem marcação (dado antigo)',
+  $q$INSERT INTO reviews (reviewer_id, barber_id, rating) VALUES (5, 3, 4)$q$,
   'aceite');
 SELECT pg_temp.t('RN04', 'pagamento válido de subscrição',
   $q$INSERT INTO payments (subscription_id, amount, method, status, paid_at) VALUES (2, 19.90, 'mbway', 'paid', now())$q$,
