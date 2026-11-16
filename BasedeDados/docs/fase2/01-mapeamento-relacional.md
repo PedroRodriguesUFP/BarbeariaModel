@@ -32,9 +32,9 @@ Notação: **PK** chave primária, *FK* chave estrangeira, `UK` chave candidata 
 **payments**(**id**, *appointment_id*?, *subscription_id*?, amount, method, status, paid_at?, created_at, updated_at)
   FK → appointments; FK → subscriptions; `CHECK num_nonnulls(appointment_id, subscription_id) = 1`
 
-**reviews**(**id**, *reviewer_id*, *barber_id*?, barber_role *(gerada)*, *service_id*?, rating, comment?, created_at, updated_at)
-  FK `reviewer_id` → users; FK `(barber_id, barber_role)` → users `(id, role)`; FK `service_id` → services;
-  `CHECK num_nonnulls(barber_id, service_id) = 1`
+**reviews**(**id**, *reviewer_id*, *appointment_id*?, *barber_id*?, barber_role *(gerada)*, *service_id*?, rating, comment?, created_at, updated_at)
+  FK `reviewer_id` → users; FK `appointment_id` → appointments (`ON DELETE SET NULL`); FK `(barber_id, barber_role)` → users `(id, role)`; FK `service_id` → services;
+  `CHECK num_nonnulls(barber_id, service_id) = 1`; índices únicos parciais `(appointment_id) WHERE barber_id IS NOT NULL` e `(appointment_id) WHERE service_id IS NOT NULL` (RN10)
 
 ## 2. Decisões de mapeamento
 
@@ -51,7 +51,7 @@ Notação: **PK** chave primária, *FK* chave estrangeira, `UK` chave candidata 
 | M9 | **Subscrição cobre marcação (0,1 : N):** `appointments.subscription_id` anulável, com FK composta `(subscription_id, customer_id) → subscriptions(id, user_id)` (RN05). | FK simples + trigger. | Garante declarativamente que a subscrição é do cliente. Com `customer_id` nulo a FK não é verificada, por isso há um CHECK extra (teste 29). A redundância `customer_id`/`subscription_id` é deliberada (ver `02-normalizacao.md` §2). |
 | M10 | **Pagamento: origem XOR** com duas FK anuláveis e `num_nonnulls(...) = 1` (RN04). | Duas tabelas de pagamento. | Mesmos atributos; Q05 fica numa só tabela. |
 | M11 | **Sem `payer_id`:** o pagador é `appointments.customer_id` ou `subscriptions.user_id`. | Manter `payer_id` como o Laravel. | Seria dependência transitiva (`02-normalizacao.md` §3) e em marcações walk-in não existe pagador com conta. |
-| M12 | **Avaliação: alvo XOR** `barber_id`/`service_id` com `num_nonnulls = 1` (RN06), sem ligação à marcação (decisão em `00-correcoes-fase1.md` §4). Substitui o `morphs('reviewable')`, que não permite FK. | `morphs`; ligação à marcação. | FK reais para os dois alvos. |
+| M12 | **Avaliação: alvo XOR** `barber_id`/`service_id` com `num_nonnulls = 1` (RN06). Substitui o `morphs('reviewable')` do Laravel, que não permite FK, por FK reais para os dois alvos. **Ligada à marcação** por `appointment_id` anulável (RN10), alinhado com a migration `add_appointment_id_to_reviews_table` já existente na app; os dois índices únicos parciais fazem o papel do `UNIQUE (appointment_id, reviewable_type)` do Laravel (decisão revista em `00-correcoes-fase1.md` §1 e §4). | `morphs`; manter sem ligação à marcação. | FK reais para os dois alvos; a app já pede `appointment_id` no `store()`, por isso não ligar seria divergir do código. |
 | M13 | **Enums → `CHECK (col IN (...))`** com os valores do repo. | `ENUM` do PostgreSQL; tabelas de domínio. | Alterar valores é um `ALTER TABLE`; tabelas de domínio seriam exagero para listas fechadas e estáveis. |
 | M14 | **Índices únicos parciais** para RN07 (`barber_id, date, time` onde `status <> 'cancelled'`) e RN08 (um `active` por utilizador). | Trigger. | Um slot cancelado liberta-se sem apagar histórico (teste 48). |
 | M15 | **Chaves substitutas** `bigint identity` (BY DEFAULT); chaves naturais (`email`, `plan.name`) em `UNIQUE`. | Email como PK. | O e-mail pode mudar; é o que o Laravel faz. |
@@ -72,7 +72,7 @@ Notação: **PK** chave primária, *FK* chave estrangeira, `UK` chave candidata 
 
 ## 4. Rastreabilidade regra → mecanismo → teste
 
-Os números de teste são os de `04_testes_integridade.sql` (execução real em `execucao_postgres16.txt`: 52 testes, 43 negativos, 9 positivos, 52 passam).
+Os números de teste são os de `04_testes_integridade.sql` (execução real em `execucao_postgres16.txt`: 55 testes, 45 negativos, 10 positivos, 55 passam).
 
 | Regra | Mecanismo | Testes |
 |---|---|---|
@@ -88,11 +88,12 @@ Os números de teste são os de `04_testes_integridade.sql` (execução real em 
 | RN05 subscrição do cliente | FK composta `(subscription_id, customer_id)` + CHECK | 28, 29, 47 |
 | RD06/RD07 planos e subscrições | `CHECK` cortes, estado, datas | 30–32 |
 | RN08 uma subscrição ativa | índice único parcial | 33 |
-| RN04 origem única de pagamento | `CHECK num_nonnulls = 1` | 34, 35, 51 |
+| RN04 origem única de pagamento | `CHECK num_nonnulls = 1` | 34, 35, 54 |
 | RD08 pagamentos | `CHECK paid_at`, `method`, `amount` | 36–38 |
-| RN06 alvo único da avaliação | `CHECK num_nonnulls = 1`, FK composta (alvo é barbeiro) | 39, 40, 42, 49, 50 |
-| RD09 avaliações | `CHECK rating`; `CHECK` não se auto-avalia | 41, 43 |
-| RD01 login externo | `password` anulável | 52 |
+| RN06 alvo único da avaliação | `CHECK num_nonnulls = 1`, FK composta (alvo é barbeiro) | 39, 40, 42, 51, 52 |
+| RD09 avaliações | `CHECK rating`; `CHECK` não se auto-avalia; FK para a marcação; marcação pode não existir (dado antigo) | 41, 43, 44, 53 |
+| RN10 no máx. uma avaliação ao barbeiro e uma ao serviço por marcação | índices únicos parciais `(appointment_id) WHERE barber_id/service_id IS NOT NULL` | 45 |
+| RD01 login externo | `password` anulável | 55 |
 
 ### Regras que o SQL declarativo **não** cobre (ficam para a Fase 3)
 
@@ -103,3 +104,4 @@ Os números de teste são os de `04_testes_integridade.sql` (execução real em 
 | Marcação dentro de `working_hours` e fora de `schedule_blocks` | Compara com intervalos noutras tabelas. | trigger |
 | Intervalos de `working_hours` do mesmo dia a sobrepor-se | Só o `UNIQUE` do período exato. | `EXCLUDE` |
 | Transições válidas de estado (`pending → confirmed → completed`) | Depende do estado anterior. | trigger |
+| `reviews.barber_id`/`service_id` coincidir com o barbeiro/serviço da marcação em `reviews.appointment_id` | Exigiria comparar com outra tabela. Hoje nada impede uma avaliação com `appointment_id` de uma marcação e um `barber_id` de outro barbeiro. | trigger |

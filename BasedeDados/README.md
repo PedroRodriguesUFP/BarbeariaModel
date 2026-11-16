@@ -9,7 +9,7 @@ SQL unificado para PostgreSQL 16, alinhado com o Laravel (nomes, enums e colunas
 Ou ficheiro a ficheiro: `psql -d <bd> -v ON_ERROR_STOP=1 -f sql/01_schema.sql` (apaga e recria só as suas tabelas), `02_seed.sql`, `03_consultas.sql`, `04_testes_integridade.sql`.
 
 ## Conteúdo
-- `sql/` — 01 schema, 02 seed, 03 consultas Q01–Q08, 04 testes (52: 43 negativos + 9 positivos)
+- `sql/` — 01 schema, 02 seed, 03 consultas Q01–Q08, 04 testes (55: 45 negativos + 10 positivos)
 - `docs/fase2/00-correcoes-fase1.md` — decisões, o que mudar no fase1.md, regras e matriz
 - `01-mapeamento-relacional.md`, `02-normalizacao.md`, `03-dados-e-consultas.md`
 - `04-alteracoes-laravel.md`, `05-alteracoes-diagrama-er.md`

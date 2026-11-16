@@ -178,22 +178,25 @@ INSERT INTO payments (id, appointment_id, subscription_id, amount, method, statu
 
 -- ---------------------------------------------------------------------
 -- REVIEWS (barbeiro XOR serviço). created_at = data da avaliação.
+-- appointment_id: a marcação concluída que originou a avaliação, quando é
+-- possível identificá-la de forma inequívoca; NULL = dado antigo sem
+-- marcação associada (caso da avaliação 8, "fora do trimestre").
 -- ---------------------------------------------------------------------
-INSERT INTO reviews (id, reviewer_id, barber_id, service_id, rating, comment, created_at) VALUES
- (1,  5, 2,    NULL, 5, 'Excelente fade.',            '2026-09-04 12:00'),
- (2,  8, 2,    NULL, 4, NULL,                          '2026-09-09 12:00'),
- (3,  6, 3,    NULL, 5, 'Muito atencioso.',            '2026-09-05 12:00'),
- (4,  10, 3,   NULL, 4, NULL,                          '2026-09-13 12:00'),
- (5,  7, 4,    NULL, 4, 'Bom corte.',                  '2026-09-08 12:00'),
- (6,  9, 4,    NULL, 3, NULL,                          '2026-09-10 12:00'),
- (7,  5, 4,    NULL, 2, 'Demorou mais do que o previsto.', '2026-10-17 12:00'),  -- fora do trimestre
- (8,  9, 2,    NULL, 5, 'Ótimo atendimento.',          '2026-07-20 12:00'),
- (9,  4, 2,    NULL, 5, NULL,                          '2026-09-26 12:00'),       -- barbeiro a avaliar barbeiro
- (10, 5, NULL, 2,    5, 'Melhor fade da cidade.',      '2026-09-04 12:00'),
- (11, 8, NULL, 5,    4, NULL,                          '2026-09-09 12:00'),
- (12, 6, NULL, 3,    5, NULL,                          '2026-09-05 12:00'),
- (13, 9, NULL, 4,    3, 'Poderia ser mais rápido.',    '2026-09-10 12:00'),
- (14, 7, NULL, 1,    4, NULL,                          '2026-10-14 12:00');
+INSERT INTO reviews (id, reviewer_id, appointment_id, barber_id, service_id, rating, comment, created_at) VALUES
+ (1,  5, 1,    2,    NULL, 5, 'Excelente fade.',            '2026-09-04 12:00'),
+ (2,  8, 4,    2,    NULL, 4, NULL,                          '2026-09-09 12:00'),
+ (3,  6, 2,    3,    NULL, 5, 'Muito atencioso.',            '2026-09-05 12:00'),
+ (4,  10, 6,   3,    NULL, 4, NULL,                          '2026-09-13 12:00'),
+ (5,  7, 3,    4,    NULL, 4, 'Bom corte.',                  '2026-09-08 12:00'),
+ (6,  9, 5,    4,    NULL, 3, NULL,                          '2026-09-10 12:00'),
+ (7,  5, 15,   4,    NULL, 2, 'Demorou mais do que o previsto.', '2026-10-17 12:00'),  -- fora do trimestre
+ (8,  9, NULL, 2,    NULL, 5, 'Ótimo atendimento.',          '2026-07-20 12:00'),      -- sem marcação identificável (dado antigo)
+ (9,  4, 12,   2,    NULL, 5, NULL,                          '2026-09-26 12:00'),       -- barbeiro a avaliar barbeiro
+ (10, 5, 1,    NULL, 2,    5, 'Melhor fade da cidade.',      '2026-09-04 12:00'),
+ (11, 8, 4,    NULL, 5,    4, NULL,                          '2026-09-09 12:00'),
+ (12, 6, 2,    NULL, 3,    5, NULL,                          '2026-09-05 12:00'),
+ (13, 9, 5,    NULL, 4,    3, 'Poderia ser mais rápido.',    '2026-09-10 12:00'),
+ (14, 7, 19,   NULL, 1,    4, NULL,                          '2026-10-14 12:00');
 
 -- ---------------------------------------------------------------------
 -- Realinhar as sequências (os IDs acima foram inseridos explicitamente)

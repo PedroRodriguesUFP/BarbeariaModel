@@ -15,7 +15,7 @@ Para cada relação: chaves candidatas, dependências funcionais (DF) e forma no
 | subscriptions | `id`; `(id, user_id)` | `id → user_id, subscription_plan_id, start_date, end_date, status` | **BCNF**. `cuts_per_month` fica no plano, não aqui. |
 | appointments | `id` | `id → customer_id, walk_in_name, walk_in_phone, barber_id, service_id, subscription_id, date, time, status` | **2NF; viola a 3NF só pela DF `subscription_id → customer_id`** (redundância controlada) — ver §2. |
 | payments | `id` | `id → appointment_id, subscription_id, amount, method, status, paid_at` | **BCNF** (depois de retirar `payer_id`, §3). |
-| reviews | `id` | `id → reviewer_id, barber_id, service_id, rating, comment, created_at` | **BCNF**. |
+| reviews | `id` | `id → reviewer_id, appointment_id, barber_id, service_id, rating, comment, created_at` | **BCNF** (ver nota de §3 sobre `appointment_id`, que não é chave nem determina `barber_id`/`service_id`). |
 
 **1NF:** todos os atributos são atómicos. O atributo multivalor «dias de trabalho» da Fase 1 não existe: o horário é uma linha por (barbeiro, dia, período) em `working_hours`. Isto é o que o repo já faz, por isso a «decomposição» 1NF coincide com o desenho da app.
 
@@ -43,7 +43,8 @@ Existe a DF **`subscription_id → customer_id`** (uma subscrição pertence a u
 | cortes disponíveis no mês | Não guardado | Deriva de `cuts_per_month` e das marcações cobertas (RN05); calculado em Q04. |
 | preço/duração total | Não guardados | Deriva de `services` (um serviço por marcação). |
 | `user_role` / `barber_role` (colunas geradas `'barber'`) | Existem fisicamente | São constantes geradas, sem valor próprio; existem só para a FK composta validar o papel. Não podem divergir de `users.role`: a FK recusa o resto. |
-| `reviews.reviewer_id` | Mantido | As avaliações não estão ligadas a marcações, logo o autor não se pode derivar de nenhuma outra relação. |
+| `reviews.reviewer_id` | Mantido | Mesmo ligada à marcação (`appointment_id`), uma marcação pode gerar duas avaliações (barbeiro e serviço) de autores que coincidem só por regra de negócio da app, não por desenho da BD; `reviewer_id` não é redundante. |
+| `reviews.barber_id`/`service_id` vs. `appointments.barber_id`/`service_id` (via `appointment_id`) | Não verificado | Quando `appointment_id` existe, o alvo da avaliação "devia" coincidir com o barbeiro/serviço dessa marcação, mas isso não é uma DF (a BD não o garante) — é uma regra de consistência não declarativa, ver `01-mapeamento-relacional.md` §4. |
 
 ## 4. Redundâncias aparentes que **não** são violação
 
