@@ -1,0 +1,16 @@
+API REST v1 (token Bearer) - so a API.
+
+Copiar por cima do projeto (mantendo as pastas). NAO inclui: User.php, .env.example,
+config/services.php, CalendarController, views, barbearia.css, HolidayService
+(esses vem dos zips do calendario e dos feriados).
+
+Ficheiros que ja existiam e sao substituidos: routes/api.php, bootstrap/app.php,
+app/Http/Requests/GuardarServicoRequest.php.
+Se mexeram em bootstrap/app.php, nao substituam: acrescentem so
+  no alias:   'auth.token' => \App\Http\Middleware\AuthenticateApiToken::class,
+  e a seguir: $middleware->api(prepend: [\App\Http\Middleware\ForceJsonResponse::class]);
+
+Depois:  php artisan migrate   (cria a tabela api_tokens)
+Testes:  composer test         (tests/Feature/Api)
+O teste "marcacao num feriado devolve 422" so passa com o zip dos feriados aplicado.
+Documentacao: docs/api.md

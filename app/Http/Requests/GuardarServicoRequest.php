@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Category;
 use App\Models\Service;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Validação de criar e editar serviços. Quem pode gerir serviços: ServicePolicy.
@@ -31,7 +33,7 @@ class GuardarServicoRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
             'duration_minutes' => ['required', 'integer', 'min:1'],
-            'category' => ['required', 'string'],
+            'category' => ['required', Rule::enum(Category::class)],
         ];
     }
 
