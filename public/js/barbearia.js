@@ -126,13 +126,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const syncAllDay = () => {
             const isAllDay = allDayCheckbox.checked;
             timeFieldsWrap.classList.toggle('is-hidden', isAllDay);
+            timeFieldsWrap.hidden = isAllDay;
             timeInputs.forEach((input) => {
+                if (isAllDay) {
+                    input.dataset.prev = input.value;
+                } else if (input.dataset.prev) {
+                    input.value = input.dataset.prev;
+                }
                 input.disabled = isAllDay;
-                if (isAllDay) input.value = '';
             });
         };
 
         allDayCheckbox.addEventListener('change', syncAllDay);
         syncAllDay();
     }
+
+    // 3. Dias da semana: ligar/desligar horas conforme o interruptor
+    document.querySelectorAll('[data-day-row]').forEach((row) => {
+        const toggle = row.querySelector('[data-day-toggle]');
+        const times = row.querySelectorAll('input[type="time"]');
+
+        if (!toggle) return;
+
+        const syncDay = () => {
+            row.classList.toggle('is-on', toggle.checked);
+            times.forEach((input) => { input.disabled = !toggle.checked; });
+        };
+
+        toggle.addEventListener('change', syncDay);
+        syncDay();
+    });
 });
